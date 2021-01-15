@@ -8,7 +8,7 @@
 
 # Training environments
 /envs
-
+model
 # Environemnt logfile
 *Project.log
 

@@ -14,8 +14,8 @@ public class AgentSoccer : Agent
     // * opposing player
     public enum Team
     {
-        Blue = 0,
-        Purple = 1
+        One = 1,
+        Two = 2
     }
 
     public enum Position
@@ -31,10 +31,12 @@ public class AgentSoccer : Agent
     int m_PlayerIndex;
     public SoccerFieldArea area;
     // The coefficient for the reward for colliding with a ball. Set using curriculum.
-    float m_BallTouch;
+    public float m_BallTouch;
     public Position position;
 
     const float k_Power = 2000f;
+    public float power = 1f;
+    public float speed = 1f;
     float m_Existential;
     float m_LateralSpeed;
     float m_ForwardSpeed;
@@ -44,9 +46,10 @@ public class AgentSoccer : Agent
 
     [HideInInspector]
     public Rigidbody agentRb;
-    SoccerSettings m_SoccerSettings;
     BehaviorParameters m_BehaviorParameters;
     Vector3 m_Transform;
+    public int battle_count=0;
+
 
     EnvironmentParameters m_ResetParams;
 
@@ -54,32 +57,29 @@ public class AgentSoccer : Agent
     {
         m_Existential = 1f / MaxStep;
         m_BehaviorParameters = gameObject.GetComponent<BehaviorParameters>();
-        if (m_BehaviorParameters.TeamId == (int)Team.Blue)
+        if (Team.One == team)
         {
-            team = Team.Blue;
             m_Transform = new Vector3(transform.position.x - 4f, .5f, transform.position.z);
         }
         else
         {
-            team = Team.Purple;
             m_Transform = new Vector3(transform.position.x + 4f, .5f, transform.position.z);
         }
         if (position == Position.Goalie)
         {
-            m_LateralSpeed = 1.0f;
-            m_ForwardSpeed = 1.0f;
+            m_LateralSpeed = 1.0f*speed;
+            m_ForwardSpeed = 1.0f*speed;
         }
         else if (position == Position.Striker)
         {
-            m_LateralSpeed = 0.3f;
-            m_ForwardSpeed = 1.3f;
+            m_LateralSpeed = 0.3f*speed;
+            m_ForwardSpeed = 1.3f*speed;
         }
         else
         {
-            m_LateralSpeed = 0.3f;
-            m_ForwardSpeed = 1.0f;
+            m_LateralSpeed = 0.3f*speed;
+            m_ForwardSpeed = 1.0f*speed;
         }
-        m_SoccerSettings = FindObjectOfType<SoccerSettings>();
         agentRb = GetComponent<Rigidbody>();
         agentRb.maxAngularVelocity = 500;
 
@@ -139,7 +139,7 @@ public class AgentSoccer : Agent
         }
 
         transform.Rotate(rotateDir, Time.deltaTime * 100f);
-        agentRb.AddForce(dirToGo * m_SoccerSettings.agentRunSpeed,
+        agentRb.AddForce(dirToGo * 2,
             ForceMode.VelocityChange);
     }
 
@@ -202,10 +202,10 @@ public class AgentSoccer : Agent
     /// </summary>
     void OnCollisionEnter(Collision c)
     {
-        var force = k_Power * m_KickPower;
+        var force = k_Power * m_KickPower*power;
         if (position == Position.Goalie)
         {
-            force = k_Power;
+            force = k_Power*power;
         }
         if (c.gameObject.CompareTag("ball"))
         {
@@ -218,10 +218,14 @@ public class AgentSoccer : Agent
 
     public override void OnEpisodeBegin()
     {
-
+        battle_count=battle_count-1;
+        if(battle_count<=0){
+            gameObject.SetActive(false);
+        }
+        //check train more
         timePenalty = 0;
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
-        if (team == Team.Purple)
+        if (team == Team.One)
         {
             transform.rotation = Quaternion.Euler(0f, -90f, 0f);
         }
@@ -233,6 +237,7 @@ public class AgentSoccer : Agent
         agentRb.velocity = Vector3.zero;
         agentRb.angularVelocity = Vector3.zero;
         SetResetParameters();
+        
     }
 
     public void SetResetParameters()
