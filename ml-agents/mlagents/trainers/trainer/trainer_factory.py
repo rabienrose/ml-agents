@@ -111,6 +111,9 @@ class TrainerFactory:
 
         trainer: Trainer = None  # type: ignore  # will be set to one of these, or raise
         trainer_type = trainer_settings.trainer_type
+        tmp_isload=False
+        if os.path.exists(trainer_artifact_path):
+            tmp_isload=True
 
         if trainer_type == TrainerType.PPO:
             trainer = PPOTrainer(
@@ -118,7 +121,7 @@ class TrainerFactory:
                 min_lesson_length,
                 trainer_settings,
                 train_model,
-                load_model,
+                tmp_isload,
                 seed,
                 trainer_artifact_path,
             )

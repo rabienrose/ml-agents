@@ -19,6 +19,7 @@ mydb=myclient["b_live"]
 user_table = mydb["user"]
 actor_table = mydb["actor"]
 train_table = mydb["train"]
+battle_table = mydb["battle"]
 
 @app.route('/get_actor_list', methods=['GET', 'POST'])
 def get_actor_list():
@@ -29,6 +30,22 @@ def get_actor_list():
 def get_actor_info():
     actor_list = list(actor_table.find({},{"_id":0}))
     return json.dumps(actor_list)
+
+@app.route('/update_actor_stats', methods=['GET', 'POST'])
+def update_actor_stats():
+    win_actor=request.form['win']
+    lose_actor=request.form['lose']
+    win_count=-1
+    for x in actor_table.find({"name":win_actor},{"win_count":1,"_id":0}):
+        win_count=x["win_count"]
+    lose_count=-1
+    for x in actor_table.find({"name":lose_actor},{"lose_count":1,"_id":0}):
+        lose_count=x["lose_count"]
+    if win_count>=0 and lose_count>=0:
+        actor_table.update_one({"name":win_actor},{"$set":{"win_count":win_count+1}})
+        actor_table.update_one({"name":lose_actor},{"$set":{"lose_count":lose_count+1}})
+    return "ok"
+
 
 @app.route('/add_actor', methods=['GET', 'POST'])
 def add_actor():
@@ -65,18 +82,18 @@ def get_actor_info_string(x):
     re_str=re_str+str(x["mass"])
     return re_str
 
-def get_model_name(actor_name):
+def get_model_name(actor_name, b_rand):
     model_name=""
     onnx_list=[]
-    bp_name=""
+    bp_name=actor_name
     for obj in oss2.ObjectIterator(bucket, prefix="model/"+actor_name):
         str_vec=obj.key.split("/")
         if len(str_vec)==2:
             model_name=str_vec[-1]
             vec_name=model_name.split("-")
-            bp_name=vec_name[0]
-            step=int(vec_name[1].split(".")[0])
-            onnx_list.append(step)
+            if actor_name==bp_name:
+                step=int(vec_name[1].split(".")[0])
+                onnx_list.append(step)
     onnx_list.sort(reverse=True)
     count=0
     filtered_models=[]
@@ -89,9 +106,12 @@ def get_model_name(actor_name):
             oss_file_path = "model"+"/"+local_name
             bucket.delete_object(oss_file_path)
         count=count+1
+    
     if len(filtered_models)>=1:
-        rand_ind = randint(0, len(filtered_models)-1)
-        print("choose: "+filtered_models[rand_ind])
+        if (b_rand):
+            rand_ind = randint(0, len(filtered_models)-1)
+        else:
+            rand_ind=0
         return filtered_models[rand_ind]
     else:
         return ""
@@ -116,8 +136,35 @@ def pop_train_quene():
             find_actor_b=True
         if find_actor_b==False:
             return "train_quene_empty"
-        re_string=re_string+get_model_name(first_train["target_actor"])
+        re_string=re_string+get_model_name(first_train["target_actor"], True)
         train_table.delete_one({"_id":first_train["_id"]})
+        return re_string
+    return "train_quene_empty"
+
+@app.route('/pop_battle_quene', methods=['GET', 'POST'])
+def pop_battle_quene():
+    battle_list = list(battle_table.find({}))
+    re_string=""
+    if len(battle_list)>0:
+        first_battle=battle_list[0]
+        find_actor_b=False
+        for x in actor_table.find({"name":first_battle["actor1"]}):
+            info_string = get_actor_info_string(x)
+            re_string=re_string+info_string+","
+            find_actor_b=True
+        if find_actor_b==False:
+            return "battle_quene_empty"
+        
+        find_actor_b=False
+        for x in actor_table.find({"name":first_battle["actor2"]}):
+            info_string = get_actor_info_string(x)
+            re_string=re_string+info_string+","
+            find_actor_b=True
+        if find_actor_b==False:
+            return "battle_quene_empty"
+        re_string=re_string+get_model_name(first_battle["actor1"], False)+","
+        re_string=re_string+get_model_name(first_battle["actor2"], False)
+        # train_table.delete_one({"_id":first_battle["_id"]})
         return re_string
     return "train_quene_empty"
 
@@ -135,6 +182,28 @@ def add_train_quene():
         for _ in range(train_count):
             train_table.insert_one({"train_actor":train_actor, "target_actor":train_actor})
     return json.dumps(["ok"])
+
+@app.route('/add_battle_quene', methods=['GET', 'POST'])
+def add_battle_quene():
+    actor1=request.args.get('actor1')
+    actor2=request.args.get('actor2')
+    if actor_table.find({"name":actor1}).count(True)==0:
+        return json.dumps(["actor1 not exist"])
+    if actor_table.find({"name":actor2}).count(True)==0:
+        return json.dumps(["actor2 not exist"])
+    battle_table.insert_one({"actor1":actor1, "actor2":actor2})
+    battle_table.insert_one({"actor1":actor2, "actor2":actor1})
+    return json.dumps(["ok"])
+
+@app.route('/show_battle_qunue', methods=['GET', 'POST'])
+def show_battle_qunue():
+    battle_list = list(battle_table.find({},{"_id":0}))
+    return json.dumps(battle_list)
+
+@app.route('/show_train_qunue', methods=['GET', 'POST'])
+def show_train_qunue():
+    train_list = list(train_table.find({},{"_id":0}))
+    return json.dumps(train_list)
 
 @app.route('/get_train_list', methods=['GET', 'POST'])
 def get_train_list():

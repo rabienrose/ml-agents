@@ -21,7 +21,6 @@ public class Actor{
     public float size=0;
     public float mass=0;
     public NNModel model=null;
-    public int max_battle_count=100;
     public string dump(){
         string re_str ="name ";
         re_str=re_str+speed+" ";
@@ -39,13 +38,20 @@ public class GameController : MonoBehaviour{
     public AgentSoccer actor_agent;
     public SoccerFieldArea[] fields;
     string oss_model_folder="https://monster-war.oss-cn-beijing.aliyuncs.com/model";
-    int field_to_use=1;
+    int field_to_use=10;
+    bool train_mode=false;
 
     protected void Start(){
         if (field_to_use>fields.Length){
             field_to_use=fields.Length;
         }
+        if (train_mode){
+            
+        }else{
+            field_to_use=1;
+        }
         StartCoroutine(Loop());
+        
     }
 
     Actor parse_actor(string info_str){
@@ -62,6 +68,20 @@ public class GameController : MonoBehaviour{
         return actor;
     }
 
+    IEnumerator DownloadModel(string model_name, Actor actor)
+    {
+        if (model_name!=""){
+            String model_url=oss_model_folder+"/"+model_name;
+            UnityWebRequest www = UnityWebRequest.Get(model_url);
+            yield return www.SendWebRequest();
+            if(www.isNetworkError || www.isHttpError) {
+                yield break;
+            }
+            byte[] results = www.downloadHandler.data;
+            actor.model = LoadOnnxModel(results);
+        }
+    }
+
     SoccerFieldArea get_idle_field(){
         for (int i=0; i<field_to_use; i++){
             if(fields[i].CheckFieldIdle()){
@@ -69,10 +89,6 @@ public class GameController : MonoBehaviour{
             }
         }
         return null;
-    }
-
-    bool update_new_model(){
-        return true;
     }
 
     NNModel LoadOnnxModel(byte[] rawModel)
@@ -106,8 +122,15 @@ public class GameController : MonoBehaviour{
                 yield return new WaitForSeconds(1);
                 continue;
             }
+            
             List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
-            UnityWebRequest www = UnityWebRequest.Post("http://0.0.0.0:8001/pop_train_quene", formData);
+            UnityWebRequest www;
+            if (train_mode){
+                www = UnityWebRequest.Post("http://0.0.0.0:8001/pop_train_quene", formData);
+            }else{
+                www = UnityWebRequest.Post("http://0.0.0.0:8001/pop_battle_quene", formData);
+            }
+            
             yield return www.SendWebRequest();
             if (www.isNetworkError || www.isHttpError){
                 yield return new WaitForSeconds(100);
@@ -119,26 +142,25 @@ public class GameController : MonoBehaviour{
                 continue;
             }
             string[] items = full_re.Split(',');
+            if (items.Length==1){
+                yield return new WaitForSeconds(10);
+                continue;
+            }
             Actor actor1 = parse_actor(items[0]);
             Actor actor2 = parse_actor(items[1]);
-            string model_name=items[2];
-            if (model_name!=""){
-                String model_url=oss_model_folder+"/"+model_name;
-                www = UnityWebRequest.Get(model_url);
-                yield return www.SendWebRequest();
-                if(www.isNetworkError || www.isHttpError) {
-                    Debug.Log(www.error);
-                    yield return new WaitForSeconds(100);
-                    continue;
-                }
-                byte[] results = www.downloadHandler.data;
-                actor2.model = LoadOnnxModel(results);
-            }
-            int dice = rnd.Next(0, 2);
-            if (dice==0){
-                idle_field.StartBattles(actor1, actor2, 10);
+            string model1_name=items[2];
+            string model2_name=items[3];
+            yield return StartCoroutine(DownloadModel(model1_name, actor1));
+            yield return StartCoroutine(DownloadModel(model2_name, actor2));
+            if (train_mode==false){
+                idle_field.StartBattles(actor2, actor1);
             }else{
-                idle_field.StartBattles(actor2, actor1, 10);
+                int dice = rnd.Next(0, 2);
+                if (dice==0){
+                    idle_field.StartTrains(actor1, actor2);
+                }else{
+                    idle_field.StartTrains(actor2, actor1);
+                }
             }
             
             yield return new WaitForSeconds(1);

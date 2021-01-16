@@ -219,7 +219,7 @@ public class AgentSoccer : Agent
     public override void OnEpisodeBegin()
     {
         battle_count=battle_count-1;
-        if(battle_count<=0){
+        if(battle_count<=0 || area.battle_done){
             gameObject.SetActive(false);
         }
         //check train more
@@ -238,6 +238,11 @@ public class AgentSoccer : Agent
         agentRb.angularVelocity = Vector3.zero;
         SetResetParameters();
         
+    }
+
+    public void StopAction(bool stop){
+        DecisionRequester d=GetComponent<DecisionRequester>();
+        d.bStop=stop;
     }
 
     public void SetResetParameters()
