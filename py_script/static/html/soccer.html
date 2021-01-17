@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Soccer Agent</title>
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="../third/jquery-1.12.4.min.js"></script>
+    <script type="text/javascript" src="../js/soccer.js"></script>
+    <link rel="stylesheet" href="../css/soccer.css">
+</head>
+<body>
+    <b>新建角色</b></br>
+    名字: <input type="text" id="name" value="" class="large_input"></input>
+    颜色(66ccff): <input type="text" id="color" value="" class="small_input"></input>
+    质量: <input type="text" id="mass" value="50" class="small_input"></input>
+    观察力（9-18）: <input type="text" id="ray_count" value="0" class="small_input"></input>
+    视野范围: <input type="text" id="ray_range" value="25" class="small_input"></input>
+    移动速度(0.5-2): <input type="text" id="speed" value="1" class="small_input"></input>
+    击球力度: <input type="text" id="force" value="1" class="small_input"></input>
+    <button type="button" onclick="add_actor()" class="step_button">创建</button>
+    </br>
+    <b>角色列表</b></br>
+    <div id="actor_list"></div>
+    </br></br>
+    <b>添加比赛计划</b></br>
+    角色1（角色名）: <input type="text" id="actor1" value="" class="large_input"></input>
+    角色2（角色名）: <input type="text" id="actor2" value="" class="large_input"></input>
+    <button type="button" onclick="add_battle()" class="step_button">提交</button>
+    </br>
+    <b>比赛计划</b></br>
+    <div id="battle_list"></div>
+    </br></br>
+    <b>添加训练计划</b></br>
+    训练角色（角色名）: <input type="text" id="train_actor" value="" class="large_input"></input>
+    对手（角色名 | self | all）: <input type="text" id="target_actor" value="" class="large_input"></input>
+    数量(0-1000）: <input type="text" id="train_count" value="10" class="small_input"></input>
+    <button type="button" onclick="add_train()" class="step_button">提交</button>
+    </br>
+    <b>训练计划</b></br>
+    <div id="train_list"></div>
+    
+</body>
+</html>
+

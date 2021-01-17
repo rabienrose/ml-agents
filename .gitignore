@@ -5,7 +5,11 @@
 /results
 # Output Builds
 /Builds
-
+UnityPlayer.so
+UnityPlayer_s.debug
+*.x86_64
+*_Data
+LinuxPlayer_s.debug
 # Training environments
 /envs
 model

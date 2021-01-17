@@ -20,7 +20,7 @@ actor_table = mydb["actor"]
 train_table = mydb["train"]
 #actor_table.insert_one({"name":"chamo","colro":"66ccff","id":0,"mass":50,"ray_count":180, "ray_range":10, "speed":0.2, "force":1, "size":1, "train_steps":0, "win_count":0, "lose_count":0})
 #train_table.insert_one({"train_actor":"chamo", "target_team":"self","train_count":10})
-# train_table.delete_one({"train_actor":"chamo"})
+# train_table.delete_many({"train_actor":"茶末"})
 # train_table.insert_one({"train_actor":"chamo", "target_actor":"chamo"})
 for x in train_table.find({}):
     print(x)

@@ -227,11 +227,11 @@ public class AgentSoccer : Agent
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
         if (team == Team.One)
         {
-            transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
         }
         else
         {
-            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            transform.rotation = Quaternion.Euler(0f, -90f, 0f);
         }
         transform.position = m_Transform;
         agentRb.velocity = Vector3.zero;

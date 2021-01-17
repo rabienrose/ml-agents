@@ -8,6 +8,9 @@ from os.path import isfile, join
 upload_model_folder="/workspace/results/chamo"
 oss_path="model"
 while True:
+    if not os.path.exists(upload_model_folder):
+        time.sleep(60)
+        continue
     for filename in os.listdir(upload_model_folder):
         file_addr=upload_model_folder+"/"+filename
         if isfile(file_addr):

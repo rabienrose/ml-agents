@@ -26,11 +26,6 @@ def get_actor_list():
     actor_list = list(actor_table.find({},{"_id":0}))
     return json.dumps(actor_list)
 
-@app.route('/get_actor_info', methods=['GET', 'POST'])
-def get_actor_info():
-    actor_list = list(actor_table.find({},{"_id":0}))
-    return json.dumps(actor_list)
-
 @app.route('/update_actor_stats', methods=['GET', 'POST'])
 def update_actor_stats():
     win_actor=request.form['win']
@@ -49,19 +44,26 @@ def update_actor_stats():
 
 @app.route('/add_actor', methods=['GET', 'POST'])
 def add_actor():
-    name=request.args.get('name')
-    color=request.args.get('color')
-    mass=request.args.get('mass')
-    ray_count=request.args.get('ray_count')
-    ray_range=request.args.get('ray_range')
-    speed=request.args.get('speed')
-    force=request.args.get('force')
-    size=request.args.get('size')
+    actor_data = request.form['actor_data']
+    actor_obj = json.loads(actor_data)
+    name=actor_obj['name']
+    color=actor_obj['color']
+    mass=actor_obj['mass']
+    ray_count=actor_obj['ray_count']
+    ray_range=actor_obj['ray_range']
+    speed=actor_obj['speed']
+    force=actor_obj['force']
+    size=actor_obj['size']
     existed=False
-    for x in actor_table.find({"name":name}):
+    for _ in actor_table.find({"name":name}):
         existed=True
     if existed:
-        return json.dumps(["existed"])
+        return json.dumps(["existed_name"])
+    existed=False
+    for _ in actor_table.find({"color":color}):
+        existed=True
+    if existed:
+        return json.dumps(["existed_color"])
     actor_info={"name":name,"color":color,"mass":mass,"ray_count":ray_count, "ray_range":ray_range, "speed":speed, "force":force, "size":size, "train_steps":0, "win_count":0, "lose_count":0}
     actor_table.insert_one(actor_info)
     return json.dumps(["ok"])
@@ -85,22 +87,20 @@ def get_actor_info_string(x):
 def get_model_name(actor_name, b_rand):
     model_name=""
     onnx_list=[]
-    bp_name=actor_name
     for obj in oss2.ObjectIterator(bucket, prefix="model/"+actor_name):
         str_vec=obj.key.split("/")
         if len(str_vec)==2:
             model_name=str_vec[-1]
             vec_name=model_name.split("-")
-            if actor_name==bp_name:
+            if actor_name==vec_name[0]:
                 step=int(vec_name[1].split(".")[0])
                 onnx_list.append(step)
     onnx_list.sort(reverse=True)
     count=0
     filtered_models=[]
     for item in onnx_list:
-        # oss_filename=bp_name+str(count)+".onnx"
-        local_name=bp_name+"-"+str(item)+".onnx"
-        if count<4:
+        local_name=actor_name+"-"+str(item)+".onnx"
+        if count<=4:
             filtered_models.append(local_name)
         else:
             oss_file_path = "model"+"/"+local_name
@@ -116,30 +116,61 @@ def get_model_name(actor_name, b_rand):
     else:
         return ""
 
+def get_train_info_str(train_info):
+    find_actor_b=False
+    re_string=""
+    for x in actor_table.find({"name":train_info["train_actor"]}):
+        info_string = get_actor_info_string(x)
+        re_string=re_string+info_string+","
+        find_actor_b=True
+    if find_actor_b==False:
+        return "train_quene_empty"
+    find_actor_b=False
+    for x in actor_table.find({"name":train_info["target_actor"]}):
+        info_string = get_actor_info_string(x)
+        re_string=re_string+info_string+","
+        find_actor_b=True
+    if find_actor_b==False:
+        return "train_quene_empty"
+    re_string=re_string+","
+    re_string=re_string+get_model_name(train_info["target_actor"], True)
+    return re_string
+
 @app.route('/pop_train_quene', methods=['GET', 'POST'])
 def pop_train_quene():
     train_list = list(train_table.find({}))
     re_string=""
     if len(train_list)>0:
         first_train=train_list[0]
-        find_actor_b=False
-        for x in actor_table.find({"name":first_train["train_actor"]}):
-            info_string = get_actor_info_string(x)
-            re_string=re_string+info_string+","
-            find_actor_b=True
-        if find_actor_b==False:
-            return "train_quene_empty"
-        find_actor_b=False
-        for x in actor_table.find({"name":first_train["target_actor"]}):
-            info_string = get_actor_info_string(x)
-            re_string=re_string+info_string+","
-            find_actor_b=True
-        if find_actor_b==False:
-            return "train_quene_empty"
-        re_string=re_string+get_model_name(first_train["target_actor"], True)
+        re_string = get_train_info_str(first_train)
         train_table.delete_one({"_id":first_train["_id"]})
-        return re_string
-    return "train_quene_empty"
+    else:
+        actor_list = list(actor_table.find({},{"_id":0,"name":1}))
+        rand_ind1 = randint(0, len(actor_list)-1)
+        rand_ind2 = randint(0, len(actor_list)-1)
+        first_train={"train_actor":actor_list[rand_ind1]["name"], "target_actor":actor_list[rand_ind2]["name"]}
+        re_string = get_train_info_str(first_train)
+    return re_string
+
+def get_battle_info_str(battle_info):
+    re_string=""
+    find_actor_b=False
+    for x in actor_table.find({"name":battle_info["actor1"]}):
+        info_string = get_actor_info_string(x)
+        re_string=re_string+info_string+","
+        find_actor_b=True
+    if find_actor_b==False:
+        return "battle_quene_empty"
+    find_actor_b=False
+    for x in actor_table.find({"name":battle_info["actor2"]}):
+        info_string = get_actor_info_string(x)
+        re_string=re_string+info_string+","
+        find_actor_b=True
+    if find_actor_b==False:
+        return "battle_quene_empty"
+    re_string=re_string+get_model_name(battle_info["actor1"], False)+","
+    re_string=re_string+get_model_name(battle_info["actor2"], False)
+    return re_string
 
 @app.route('/pop_battle_quene', methods=['GET', 'POST'])
 def pop_battle_quene():
@@ -147,50 +178,57 @@ def pop_battle_quene():
     re_string=""
     if len(battle_list)>0:
         first_battle=battle_list[0]
-        find_actor_b=False
-        for x in actor_table.find({"name":first_battle["actor1"]}):
-            info_string = get_actor_info_string(x)
-            re_string=re_string+info_string+","
-            find_actor_b=True
-        if find_actor_b==False:
-            return "battle_quene_empty"
-        
-        find_actor_b=False
-        for x in actor_table.find({"name":first_battle["actor2"]}):
-            info_string = get_actor_info_string(x)
-            re_string=re_string+info_string+","
-            find_actor_b=True
-        if find_actor_b==False:
-            return "battle_quene_empty"
-        re_string=re_string+get_model_name(first_battle["actor1"], False)+","
-        re_string=re_string+get_model_name(first_battle["actor2"], False)
-        # train_table.delete_one({"_id":first_battle["_id"]})
-        return re_string
-    return "train_quene_empty"
+        re_string = get_battle_info_str(first_battle)
+        battle_table.delete_one({"_id":first_battle["_id"]})
+    else:
+        actor_list = list(actor_table.find({},{"_id":0,"name":1}))
+        rand_ind1 = randint(0, len(actor_list)-1)
+        rand_ind2 = randint(0, len(actor_list)-1)
+        first_battle={"actor1":actor_list[rand_ind1]["name"], "actor2":actor_list[rand_ind2]["name"]}
+        re_string = get_battle_info_str(first_battle)
+    return re_string
 
 @app.route('/add_train_quene', methods=['GET', 'POST'])
 def add_train_quene():
-    train_actor=request.args.get('train_actor')
-    target_actor=request.args.get('target_actor')
-    train_count=int(request.args.get('train_count'))
+    train_data = request.form['train_data']
+    train_obj = json.loads(train_data)
+    train_actor=train_obj['train_actor']
+    target_actor=train_obj['target_actor']
+    train_count=train_obj['train_count']
     if actor_table.find({"name":train_actor}).count(True)==0:
-        return json.dumps(["train_actpr not exist"])
+        return json.dumps(["train_actor_not_exist"])
     if target_actor!="self" and target_actor!="all":
         if actor_table.find({"name":target_actor}).count(True)==0:
-            return json.dumps(["target_actor not exist"])
+            return json.dumps(["target_actor_not_exist"])
     if target_actor=="self":
         for _ in range(train_count):
             train_table.insert_one({"train_actor":train_actor, "target_actor":train_actor})
+    elif target_actor=="all":
+        for _ in range(train_count):
+            actor_list = list(actor_table.find({},{"_id":0,"name":1}))
+            rand_ind = randint(0, len(actor_list)-1)
+            train_table.insert_one({"train_actor":train_actor, "target_actor":actor_list[rand_ind]["name"]})
+    else:
+        for _ in range(train_count):
+            train_table.insert_one({"train_actor":train_actor, "target_actor":target_actor})
     return json.dumps(["ok"])
 
 @app.route('/add_battle_quene', methods=['GET', 'POST'])
 def add_battle_quene():
-    actor1=request.args.get('actor1')
-    actor2=request.args.get('actor2')
+    battle_data = request.form['battle_data']
+    battle_obj = json.loads(battle_data)
+    actor1=battle_obj['actor1']
+    actor2=battle_obj['actor2']
     if actor_table.find({"name":actor1}).count(True)==0:
-        return json.dumps(["actor1 not exist"])
+        return json.dumps(["actor1_not_exist"])
     if actor_table.find({"name":actor2}).count(True)==0:
-        return json.dumps(["actor2 not exist"])
+        return json.dumps(["actor2_not_exist"])
+    re_string= get_model_name(actor1, False)
+    if re_string=="":
+        return json.dumps(["actor1_no_model"])
+    re_string= get_model_name(actor2, False)
+    if re_string=="":
+        return json.dumps(["actor2_no_model"])
     battle_table.insert_one({"actor1":actor1, "actor2":actor2})
     battle_table.insert_one({"actor1":actor2, "actor2":actor1})
     return json.dumps(["ok"])
@@ -229,5 +267,5 @@ def get_access_list():
 if __name__ == '__main__':
     app.config['SECRET_KEY'] = 'xxx'
     app.config['UPLOAD_FOLDER']='./raw'
-    app.debug = True
+    app.debug = False
     app.run('0.0.0.0', port=8001)

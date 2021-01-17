@@ -39,6 +39,8 @@ public class SoccerFieldArea : MonoBehaviour
     public Text score2_text;
     [HideInInspector]
     public bool battle_pause;
+    [HideInInspector]
+    public int field_id;
 
     EnvironmentParameters m_ResetParams;
 
@@ -66,7 +68,7 @@ public class SoccerFieldArea : MonoBehaviour
         List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
         formData.Add(new MultipartFormDataSection("win",win_actor));
         formData.Add(new MultipartFormDataSection("lose",lose_actor));
-        UnityWebRequest www = UnityWebRequest.Post("http://0.0.0.0:8001/update_actor_stats", formData);
+        UnityWebRequest www = UnityWebRequest.Post("http://39.105.230.163:8001/update_actor_stats", formData);
         yield return www.SendWebRequest();
     }
 
@@ -75,11 +77,12 @@ public class SoccerFieldArea : MonoBehaviour
         if (!is_trainning){
             yield return new WaitForSeconds(2);
         }
-
+        battle_pause=false;
         foreach (var ps in playerStates)
         {
             ps.agentScript.EndEpisode();  //all agents need to be reset
         }
+        
     }
 
     IEnumerator FreezeActors()
@@ -93,7 +96,6 @@ public class SoccerFieldArea : MonoBehaviour
         {
             ps.agentScript.StopAction(false);
         }
-        battle_pause=false;
     }
 
     void update_score_board(){
@@ -248,6 +250,8 @@ public class SoccerFieldArea : MonoBehaviour
     }
 
     public void StartBattles(Actor actor1, Actor actor2){
+        team1_score=0;
+        team2_score=0;
         is_trainning=false;
         playerStates.Clear();
         destroy_all();

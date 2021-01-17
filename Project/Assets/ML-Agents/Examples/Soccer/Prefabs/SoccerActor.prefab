@@ -249,8 +249,8 @@ MonoBehaviour:
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
-  m_BehaviorType: 0
-  m_BehaviorName: chamo1
+  m_BehaviorType: 2
+  m_BehaviorName: chamo
   TeamId: 0
   m_UseChildSensors: 1
   m_UseChildActuators: 1
@@ -276,7 +276,7 @@ MonoBehaviour:
   m_BallTouch: 0
   position: 2
   power: 1
-  speed: 2
+  speed: 1
   timePenalty: 0
   agentRb: {fileID: 0}
   battle_count: 100
@@ -300,10 +300,10 @@ MonoBehaviour:
   - wall
   - Agent2
   - Agent1
-  m_RaysPerDirection: 9
+  m_RaysPerDirection: 18
   m_MaxRayDegrees: 180
   m_SphereCastRadius: 0.5
-  m_RayLength: 25
+  m_RayLength: 20
   m_RayLayerMask:
     serializedVersion: 2
     m_Bits: 4294967291
@@ -326,6 +326,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   DecisionPeriod: 5
   TakeActionsBetweenDecisions: 1
+  bStop: 0
 --- !u!114 &360945156368143620
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -40,6 +40,7 @@ public class GameController : MonoBehaviour{
     string oss_model_folder="https://monster-war.oss-cn-beijing.aliyuncs.com/model";
     int field_to_use=10;
     bool train_mode=false;
+    int train_count=0;
 
     protected void Start(){
         if (field_to_use>fields.Length){
@@ -73,6 +74,7 @@ public class GameController : MonoBehaviour{
         if (model_name!=""){
             String model_url=oss_model_folder+"/"+model_name;
             UnityWebRequest www = UnityWebRequest.Get(model_url);
+            Debug.Log(model_url);
             yield return www.SendWebRequest();
             if(www.isNetworkError || www.isHttpError) {
                 yield break;
@@ -113,8 +115,10 @@ public class GameController : MonoBehaviour{
 
     IEnumerator Loop(){
         System.Random rnd = new System.Random();
+        
         for(int i=0; i<field_to_use; i++){
             fields[i].gameObject.SetActive(true);
+            fields[i].field_id=i;
         }
         while (true){
             SoccerFieldArea idle_field = get_idle_field();
@@ -126,13 +130,14 @@ public class GameController : MonoBehaviour{
             List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
             UnityWebRequest www;
             if (train_mode){
-                www = UnityWebRequest.Post("http://0.0.0.0:8001/pop_train_quene", formData);
+                www = UnityWebRequest.Post("http://39.105.230.163:8001/pop_train_quene", formData);
             }else{
-                www = UnityWebRequest.Post("http://0.0.0.0:8001/pop_battle_quene", formData);
+                www = UnityWebRequest.Post("http://39.105.230.163:8001/pop_battle_quene", formData);
             }
             
             yield return www.SendWebRequest();
             if (www.isNetworkError || www.isHttpError){
+                Debug.Log("NetworkError");
                 yield return new WaitForSeconds(100);
                 continue;
             }
@@ -156,6 +161,8 @@ public class GameController : MonoBehaviour{
                 idle_field.StartBattles(actor2, actor1);
             }else{
                 int dice = rnd.Next(0, 2);
+                Debug.Log("start train ("+train_count +") on field: "+idle_field.field_id+"    "+actor1.name+":"+actor2.name);
+                train_count=train_count+1;
                 if (dice==0){
                     idle_field.StartTrains(actor1, actor2);
                 }else{
