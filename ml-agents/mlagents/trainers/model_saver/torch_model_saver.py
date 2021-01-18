@@ -52,7 +52,7 @@ class TorchModelSaver(BaseModelSaver):
         state_dict = {
             name: module.state_dict() for name, module in self.modules.items()
         }
-        torch.save(state_dict, f"{checkpoint_path}.pt")
+        #torch.save(state_dict, f"{checkpoint_path}.pt")
         torch.save(state_dict, os.path.join(self.model_path, "checkpoint.pt"))
         self.export(checkpoint_path, behavior_name)
         return checkpoint_path

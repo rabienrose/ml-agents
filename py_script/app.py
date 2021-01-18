@@ -81,7 +81,9 @@ def get_actor_info_string(x):
     re_str=re_str+str(x["ray_count"])+" "
     re_str=re_str+str(x["force"])+" "
     re_str=re_str+str(x["size"])+" "
-    re_str=re_str+str(x["mass"])
+    re_str=re_str+str(x["mass"])+" "
+    re_str=re_str+str(x["win_count"])+" "
+    re_str=re_str+str(x["lose_count"])
     return re_str
 
 def get_model_name(actor_name, b_rand):

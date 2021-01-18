@@ -37,6 +37,8 @@ public class SoccerFieldArea : MonoBehaviour
     public Vector3 ballStartingPos;
     public Text score1_text;
     public Text score2_text;
+    public Text info1_text;
+    public Text info2_text;
     [HideInInspector]
     public bool battle_pause;
     [HideInInspector]
@@ -49,6 +51,7 @@ public class SoccerFieldArea : MonoBehaviour
     int team2_score=0;
     Actor actor_info1;
     Actor actor_info2;
+    
     public bool battle_done;
     bool is_trainning=true;
     public int max_battle_count=100;
@@ -105,6 +108,16 @@ public class SoccerFieldArea : MonoBehaviour
             data_info = String.Format("<color=#{0}>{2}    {1}</color>", actor_info2.color, actor_info2.name, team2_score); 
             score2_text.text = data_info;
         }
+    }
+
+    string get_actor_info_string(Actor actor_info){
+        string actor_inf_str = String.Format("<color=#{0}>{1}</color>  质量:{2}  观察力:{3}  视野:{4}  体积:{5}  速度:{6}  力量:{7}  胜利:{8}  失败:{9}", actor_info.color, actor_info.name, actor_info.mass, actor_info.ray_count, actor_info.ray_range, actor_info.size, actor_info.speed,actor_info.force,actor_info.win_count, actor_info.lose_count); 
+        return actor_inf_str;
+    }
+
+    void ShowActorInfo(){
+        info1_text.text = get_actor_info_string(actor_info1);
+        info2_text.text = get_actor_info_string(actor_info2);
     }
 
     public void GoalTouched(AgentSoccer.Team scoredTeam)
@@ -171,19 +184,25 @@ public class SoccerFieldArea : MonoBehaviour
             return null;
         }
         GameObject fab=player_fab.gameObject;
-        AgentSoccer agent=fab.GetComponent<AgentSoccer>();
-        agent.battle_count=max_battle_count;
-        agent.area=this;
-        agent.speed=actor_info.speed;
-        agent.power=actor_info.force;
-        agent.team=team;
+        if (is_trainning==false){
+            player_fab.MaxStep=1000;
+            player_fab.battle_count=25;
+        }else{
+            player_fab.MaxStep=3000;
+            player_fab.battle_count=max_battle_count;
+        }
+        
+        player_fab.area=this;
+        player_fab.speed=actor_info.speed;
+        player_fab.power=actor_info.force;
+        player_fab.team=team;
         RayPerceptionSensorComponent3D ray_sensor=fab.GetComponent<RayPerceptionSensorComponent3D>();
         ray_sensor.RaysPerDirection=actor_info.ray_count;
         ray_sensor.RayLength=actor_info.ray_range;
         ray_sensor.MaxRayDegrees=180;
         List<string> temp_tags = ray_sensor.DetectableTags;
         BehaviorParameters bp = fab.GetComponent<BehaviorParameters>();
-        if (agent.team==AgentSoccer.Team.One){
+        if (player_fab.team==AgentSoccer.Team.One){
             temp_tags[1]="Goal1";
             temp_tags[2]="Goal2";
             temp_tags[4]="Agent1";
@@ -208,10 +227,15 @@ public class SoccerFieldArea : MonoBehaviour
             bp.Model=null;
             bp.BehaviorType=BehaviorType.Default;
         }
-        
-        GameObject obj = Instantiate(fab, parent.position+posi, Quaternion.identity);
+        Vector3 new_posi = parent.position+posi;
+        new_posi.y=actor_info.size/2;
+        GameObject obj = Instantiate(fab, parent.position+new_posi, Quaternion.identity);
         Transform trans = obj.transform;
+        // obj.transform.position=new Vector3(trans.position.x, actor_info.size/2f, trans.position.z);
+        obj.transform.localScale=new Vector3(actor_info.size, actor_info.size, actor_info.size);
         trans.SetParent(parent);
+        // obj.SetActive(true);
+        // Debug.Log(obj.activeSelf);
         Transform childTrans = trans.Find("AgentCube");
         Material myMaterial = childTrans.gameObject.GetComponent<Renderer>().material;
         myMaterial.color = getColorFromString(actor_info.color);
@@ -250,6 +274,7 @@ public class SoccerFieldArea : MonoBehaviour
     }
 
     public void StartBattles(Actor actor1, Actor actor2){
+        battle_done=false;
         team1_score=0;
         team2_score=0;
         is_trainning=false;
@@ -265,7 +290,6 @@ public class SoccerFieldArea : MonoBehaviour
                 return;
             }
         }
-        battle_done=false;
         actor_info1=actor1;
         actor_info2=actor2;
         Transform goal1Trans = transform.Find("Field").Find("Goal1");
@@ -274,6 +298,7 @@ public class SoccerFieldArea : MonoBehaviour
         Transform goal2Trans = transform.Find("Field").Find("Goal2");
         Material myMaterial2 = goal2Trans.gameObject.GetComponent<Renderer>().material;
         myMaterial2.color = getColorFromString(actor2.color);
+        ShowActorInfo();
         update_score_board();
     }
 }

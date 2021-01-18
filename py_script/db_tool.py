@@ -22,12 +22,12 @@ train_table = mydb["train"]
 #train_table.insert_one({"train_actor":"chamo", "target_team":"self","train_count":10})
 # train_table.delete_many({"train_actor":"茶末"})
 # train_table.insert_one({"train_actor":"chamo", "target_actor":"chamo"})
-for x in train_table.find({}):
-    print(x)
+# for x in train_table.find({}):
+#     print(x)
 # for x in actor_table.find({}):
 #     print(x)
 
-#task_table.delete_many({})
+train_table.delete_many({"train_actor":"chamo"})
 # task_table.update_many({"task":"locmap"},{"$set":{"task":"group","status":2}})
 #task_table.update_many({"name":{"$regex" : ".*LMVAGL7U0KA001658.*"}},{"$set":{"task":"feature","status":2}})
 #task_table.update_one({"name":"05-09-2020-17-40-24_LMVHFEFZ8KA752551_in"},{"$set":{"task":"test_crash","status":2}})

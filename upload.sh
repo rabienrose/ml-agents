@@ -6,6 +6,7 @@ scp -r Project/soccer_Data root@39.105.230.163:~/mlagent
 #scp -r ml-agents-envs root@39.105.230.163:~/mlagent
 #scp Project/UnityPlayer.so root@39.105.230.163:~/mlagent
 #scp -r py_script/upload_model.py root@39.105.230.163:~/mlagent/py_script
+scp -r py_script root@39.105.230.163:~/mlagent
 
 #pip3 install torch -f https://download.pytorch.org/whl/torch_stable.html
 #pip3 install -e ./ml-agents-envs

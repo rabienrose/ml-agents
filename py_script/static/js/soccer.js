@@ -162,6 +162,7 @@ function add_actor(){
     var mass = parseInt(document.getElementById("mass").value)
     var ray_count = parseInt(document.getElementById("ray_count").value)
     var ray_range = parseInt(document.getElementById("ray_range").value)
+    var size = parseInt(document.getElementById("size").value)
     var speed = parseFloat(document.getElementById("speed").value)
     var force = parseFloat(document.getElementById("force").value)
     var actor_data={}
@@ -185,7 +186,7 @@ function add_actor(){
         alert("质量需要是数字")
         return
     }
-    if (mass>100 || mass<10){
+    if (mass>500 || mass<10){
         alert("质量超出允许范围")
         return
     }
@@ -208,6 +209,14 @@ function add_actor(){
         return
     }
     actor_data["ray_range"]=ray_range
+    if (isNaN(size)){
+        alert("体积需要是数字")
+        return
+    }
+    if (size>2 || size<0.5){
+        alert("体积超出允许范围")
+        return
+    }
     if (isNaN(speed)){
         alert("移动速度需要是数字")
         return
@@ -226,7 +235,7 @@ function add_actor(){
         return
     }
     actor_data["force"]=force
-    actor_data["size"]=1
+    actor_data["size"]=size
     console.log(actor_data)
     $.ajax({
         type: 'POST',

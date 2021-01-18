@@ -270,7 +270,7 @@ MonoBehaviour:
   agentParameters:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
-  MaxStep: 3000
+  MaxStep: 1000
   team: 2
   area: {fileID: 0}
   m_BallTouch: 0
@@ -279,7 +279,7 @@ MonoBehaviour:
   speed: 1
   timePenalty: 0
   agentRb: {fileID: 0}
-  battle_count: 100
+  battle_count: 25
 --- !u!114 &8238939283672671244
 MonoBehaviour:
   m_ObjectHideFlags: 0

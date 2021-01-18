@@ -21,12 +21,11 @@ while True:
         onnx_list=[]
         bp_name=""
         for filename1 in os.listdir(sub_folder):
-            if not ".onnx" in filename1:
-                continue
-            vec_name=filename1.split("-")
-            bp_name=vec_name[0]
-            step=int(vec_name[1].split(".")[0])
-            onnx_list.append(step)
+            if ".onnx" in filename1:
+                vec_name=filename1.split("-")
+                bp_name=vec_name[0]
+                step=int(vec_name[1].split(".")[0])
+                onnx_list.append(step)
         onnx_list.sort(reverse=True)
         count=0
         for item in onnx_list:

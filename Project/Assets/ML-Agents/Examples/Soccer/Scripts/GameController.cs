@@ -20,6 +20,8 @@ public class Actor{
     public float force=0;
     public float size=0;
     public float mass=0;
+    public int win_count=0;
+    public int lose_count=0;
     public NNModel model=null;
     public string dump(){
         string re_str ="name ";
@@ -66,6 +68,8 @@ public class GameController : MonoBehaviour{
         actor.force=float.Parse(items[5]);
         actor.size=float.Parse(items[6]);
         actor.mass=float.Parse(items[7]);
+        actor.win_count=Int32.Parse(items[8]);
+        actor.lose_count=Int32.Parse(items[9]);
         return actor;
     }
 
@@ -74,7 +78,6 @@ public class GameController : MonoBehaviour{
         if (model_name!=""){
             String model_url=oss_model_folder+"/"+model_name;
             UnityWebRequest www = UnityWebRequest.Get(model_url);
-            Debug.Log(model_url);
             yield return www.SendWebRequest();
             if(www.isNetworkError || www.isHttpError) {
                 yield break;
@@ -126,7 +129,6 @@ public class GameController : MonoBehaviour{
                 yield return new WaitForSeconds(1);
                 continue;
             }
-            
             List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
             UnityWebRequest www;
             if (train_mode){
@@ -169,7 +171,6 @@ public class GameController : MonoBehaviour{
                     idle_field.StartTrains(actor2, actor1);
                 }
             }
-            
             yield return new WaitForSeconds(1);
         }
     }

@@ -59,11 +59,11 @@ public class AgentSoccer : Agent
         m_BehaviorParameters = gameObject.GetComponent<BehaviorParameters>();
         if (Team.One == team)
         {
-            m_Transform = new Vector3(transform.position.x - 4f, .5f, transform.position.z);
+            m_Transform = new Vector3(transform.position.x - 4f, transform.position.y, transform.position.z);
         }
         else
         {
-            m_Transform = new Vector3(transform.position.x + 4f, .5f, transform.position.z);
+            m_Transform = new Vector3(transform.position.x + 4f, transform.position.y, transform.position.z);
         }
         if (position == Position.Goalie)
         {
