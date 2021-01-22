@@ -14,8 +14,8 @@ public class AgentSoccer : Agent
     // * opposing player
     public enum Team
     {
-        One = 1,
-        Two = 2
+        One = 0,
+        Two = 1
     }
 
     public enum Position
@@ -48,8 +48,6 @@ public class AgentSoccer : Agent
     public Rigidbody agentRb;
     BehaviorParameters m_BehaviorParameters;
     Vector3 m_Transform;
-    public int battle_count=0;
-
 
     EnvironmentParameters m_ResetParams;
 
@@ -57,12 +55,15 @@ public class AgentSoccer : Agent
     {
         m_Existential = 1f / MaxStep;
         m_BehaviorParameters = gameObject.GetComponent<BehaviorParameters>();
-        if (Team.One == team)
+        if (team == Team.One)
+        //if (m_BehaviorParameters.TeamId == (int)Team.One)
         {
+            // team = Team.One;
             m_Transform = new Vector3(transform.position.x - 4f, transform.position.y, transform.position.z);
         }
         else
         {
+            // team = Team.Two;
             m_Transform = new Vector3(transform.position.x + 4f, transform.position.y, transform.position.z);
         }
         if (position == Position.Goalie)
@@ -218,11 +219,9 @@ public class AgentSoccer : Agent
 
     public override void OnEpisodeBegin()
     {
-        battle_count=battle_count-1;
-        if(battle_count<=0 || area.battle_done){
+        if(cul_steps>25000 || area.battle_done){
             gameObject.SetActive(false);
         }
-        //check train more
         timePenalty = 0;
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);
         if (team == Team.One)

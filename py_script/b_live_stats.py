@@ -1,5 +1,4 @@
 import time
-import time
 import asyncio
 import danmaku
 import _thread
@@ -11,51 +10,8 @@ from common.config import drop_db
 [bucket, myclient]=get_config()
 mydb=myclient["b_live"]
 user_table = mydb["user"]
-
+account_table = mydb["account"]
 roomid=585480
-cookie = "buvid3=0DEC0D0A-02A9-47B0-BBCB-EE903A23036F190959infoc; LIVE_BUVID=AUTO7115751187077836; stardustvideo=1; rpdid=|(k|km|~Ylkk0J'ul~luu)~J~; LIVE_PLAYER_TYPE=1; blackside_state=1; CURRENT_FNVAL=80; _uuid=FC612A5D-850F-AA1D-3F4A-E3547453892B17191infoc; bp_video_offset_3257122=469734366939084455; CURRENT_QUALITY=80; buivd_fp=0DEC0D0A-02A9-47B0-BBCB-EE903A23036F190959infoc; buvid_fp_plain=0DEC0D0A-02A9-47B0-BBCB-EE903A23036F190959infoc; bp_video_offset_1678662019=470458764711815006; bp_t_offset_1678662019=470522476256100477; bp_t_offset_3257122=470516102523535765; sid=6basqi43; bsource=search_baidu; finger=481832271; GIFT_BLOCK_COOKIE=GIFT_BLOCK_COOKIE; fingerprint3=f81747dd6d30ab5b150c4421a164bcd0; fingerprint=bfa826c35b93b95324cd97cf34f731c2; fingerprint_s=7473b67f5b98e8dd83624b8d5d37bd13; _dfcaptcha=b18ee69d16278d3d0439edf9453b4250; Hm_lvt_8a6e55dbd2870f0f5bc9194cddf32a02=1606662395,1608042769,1608433166,1608549141; Hm_lpvt_8a6e55dbd2870f0f5bc9194cddf32a02=1608549141; DedeUserID=3257122; DedeUserID__ckMd5=0459704718e252a3; SESSDATA=5f25ba14%2C1624101597%2C32391*c1; bili_jct=1521974d0f718c83521be6b669e70a6b; PVID=6"
-cookie = "_uuid=FCC99AF5-6929-AB63-0328-E28ADFC55F9307057infoc; buvid3=0DEC0D0A-02A9-47B0-BBCB-EE903A23036F190959infoc; LIVE_BUVID=AUTO7115751187077836; sid=5d1ryd59; CURRENT_FNVAL=16; stardustvideo=1; rpdid=|(k|km|~Ylkk0J'ul~luu)~J~; CURRENT_QUALITY=64; LIVE_ROOM_ADMIN_UP_TIP=1; bp_video_offset_3257122=413359025648654201; bp_t_offset_3257122=413359025648654201; Hm_lvt_8a6e55dbd2870f0f5bc9194cddf32a02=1594727616,1594735626,1595092342,1595092364; GIFT_BLOCK_COOKIE=GIFT_BLOCK_COOKIE; bsource=search_baidu; _dfcaptcha=1259f52722c83e74aaf23ef61728d286; DedeUserID=3257122; DedeUserID__ckMd5=0459704718e252a3; SESSDATA=87c6ffe3%2C1610681708%2C0ed5a*71; bili_jct=2bb07096258d0d7e38d454c7460c8923; PVID=21"
-token = re.search(r'bili_jct=(.*?);', cookie).group(1)
-
-def send_msg(text):
-    url = 'https://api.live.bilibili.com/ajax/msg'
-    form = {
-        'roomid': roomid,
-        'visit_id': '',
-        'csrf_token': token  # csrf_token就是cookie中的bili_jct字段;且有效期是7天!!!
-    }
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36',
-        'Cookie': cookie
-    }
-    html = requests.post(url, data=form)
-    print(text)
-    url_send = 'https://api.live.bilibili.com/msg/send'
-    data = {
-        'color': int("ff0000", 16),
-        'fontsize': '25',
-        'mode': '1',
-        'msg': text,
-        'rnd': 1595133024,
-        'roomid': roomid,
-        'csrf_token': token,
-        'csrf': token
-    }
-    try:
-        html_send = requests.post(url_send, data=data, headers=headers)
-        result = html_send.json()
-        if result['code'] == 0 and result['msg'] == '':
-            print("succ")
-    except:
-        print("failed")
-
-def game_thread():
-    count=0
-    while True:
-        count=count+1
-        start_time = time.time()
-        time.sleep(0.5)
-
 async def printer(q):
     global new_add_list
     while True:
@@ -70,15 +26,44 @@ async def printer(q):
             uid=data["uid"]
             giftType=data["giftType"]
             gift_name=data["giftName"]
+            print(data)
+            re=list(account_table.find({"b_account_id":uid},{"_id":0,"name":1,"money":1}))
+            if len(re)>0:
+                account_table.update_one({"name":re[0]["name"]},{"$set":{"money":re[0]["money"]+coin_count}})
+            else:
+                re=list(user_table.find({"user_id":uid},{"_id":0, "coin":1}))
+                old_coin=0
+                if "coin" in re[0]:
+                    old_coin=re[0]["coin"]
+                if len(re)>0:
+                    user_table.update_one({"user_id":uid},{"$set":{"coin":old_coin+coin_count}})
+            print(gift_name)
         elif m['msg_type'] == 'danmaku':
             uname = m['name']
             content = m['content']
             uid = m['id']
-#            if uid!=3257122:
-#                send_msg(send_text)
+            if len(content)==4 and content.isdigit():
+                re=list(account_table.find({"verify_code":content},{"_id":0,"name":1}))
+                print(re[0])
+                if len(re)>0:
+                    re1=list(account_table.find({"b_account_id":uid},{"_id":0,"name":1}))
+                    if len(re1)>0:
+                        print("already bind to this b account!!!")
+                        continue
+                    agent_account = re[0]["name"]
+                    re=list(user_table.find({"user_id":uid},{"_id":0, "coin":1}))
+                    b_old_coin=0
+                    if len(re)>0 and "coin" in re[0]:
+                        b_old_coin=re[0]["coin"]
+                        user_table.update_one({"user_id":uid},{"$set":{"coin":0}})
+                    re=list(account_table.find({"name":agent_account},{"_id":0,"money":1}))
+                    account_money=0
+                    if len(re)>0 and "money" in re[0]:
+                        account_money=re[0]["money"]
+                    account_table.update_one({"name":agent_account},{"$set":{"b_account_id":uid,"b_account_name":uname,"money":b_old_coin+account_money, "verify_code":-1}})
+                    
         elif m['msg_type'] == 'other':
             content=m["content"]
-            print(m)
             if not type(content) is dict:
                 continue
             if "cmd" in content and content['cmd']=="INTERACT_WORD":
@@ -103,8 +88,6 @@ async def main(url):
     asyncio.create_task(printer(q))
     await dmc.start()
 
-drop_db("b_live")
-_thread.start_new_thread( game_thread,() )
 asyncio.run(main("https://live.bilibili.com/"+str(roomid)))
 
         

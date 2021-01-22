@@ -39,8 +39,9 @@ public class Actor{
 public class GameController : MonoBehaviour{
     public AgentSoccer actor_agent;
     public SoccerFieldArea[] fields;
+    //string oss_model_folder="https://monster-war.oss-cn-beijing-internal.aliyuncs.com/model";
     string oss_model_folder="https://monster-war.oss-cn-beijing.aliyuncs.com/model";
-    int field_to_use=10;
+    int field_to_use=5;
     bool train_mode=false;
     int train_count=0;
 
@@ -77,9 +78,11 @@ public class GameController : MonoBehaviour{
     {
         if (model_name!=""){
             String model_url=oss_model_folder+"/"+model_name;
+            Debug.Log(model_url);
             UnityWebRequest www = UnityWebRequest.Get(model_url);
             yield return www.SendWebRequest();
             if(www.isNetworkError || www.isHttpError) {
+                Debug.Log("download model wrong!!!");
                 yield break;
             }
             byte[] results = www.downloadHandler.data;
@@ -129,6 +132,7 @@ public class GameController : MonoBehaviour{
                 yield return new WaitForSeconds(1);
                 continue;
             }
+            
             List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
             UnityWebRequest www;
             if (train_mode){
@@ -158,12 +162,12 @@ public class GameController : MonoBehaviour{
             string model1_name=items[2];
             string model2_name=items[3];
             yield return StartCoroutine(DownloadModel(model1_name, actor1));
-            yield return StartCoroutine(DownloadModel(model2_name, actor2));
+            yield return StartCoroutine(DownloadModel(model2_name, actor2));         
+            Debug.Log("reset field: "+idle_field.field_id+", "+actor1.model+", "+actor2.model);
             if (train_mode==false){
-                idle_field.StartBattles(actor2, actor1);
+                idle_field.StartBattles(actor1, actor2);
             }else{
                 int dice = rnd.Next(0, 2);
-                Debug.Log("start train ("+train_count +") on field: "+idle_field.field_id+"    "+actor1.name+":"+actor2.name);
                 train_count=train_count+1;
                 if (dice==0){
                     idle_field.StartTrains(actor1, actor2);

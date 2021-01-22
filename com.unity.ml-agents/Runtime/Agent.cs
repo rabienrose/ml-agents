@@ -231,6 +231,7 @@ namespace Unity.MLAgents
         /// </example>
         [FormerlySerializedAs("maxStep")]
         [HideInInspector] public int MaxStep;
+        [HideInInspector] public int cul_steps;
 
         /// Current Agent information (message sent to Brain).
         AgentInfo m_Info;
@@ -410,6 +411,7 @@ namespace Unity.MLAgents
                 return;
             }
             m_Initialized = true;
+            cul_steps=0;
 
             // Grab the "static" properties for the Agent.
             m_EpisodeId = EpisodeIdCounter.GetEpisodeId();
@@ -1316,6 +1318,7 @@ namespace Unity.MLAgents
         void AgentIncrementStep()
         {
             m_StepCount += 1;
+            cul_steps += 1;
         }
 
         /// Used by the brain to make the agent perform a step.

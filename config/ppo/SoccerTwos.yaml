@@ -25,5 +25,4 @@ behaviors:
     time_horizon: 1000
     summary_freq: 10000
     threaded: false
-environment_parameters:
-  ball_touch: 0.1
+    self_play:

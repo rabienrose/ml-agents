@@ -8,36 +8,51 @@
     <link rel="stylesheet" href="../css/soccer.css">
 </head>
 <body>
-    <b>新建角色</b></br>
-    名字:<input type="text" id="name" value="" class="large_input"></input>
-    颜色(66ccff):<input type="text" id="color" value="" class="small_input"></input>
-    质量(10-500):<input type="text" id="mass" value="50" class="small_input"></input>
-    观察力(9-18):<input type="text" id="ray_count" value="14" class="small_input"></input>
-    视野范围(15-30):<input type="text" id="ray_range" value="25" class="small_input"></input>
-    大小(0.5-2):<input type="text" id="size" value="1" class="small_input"></input>
-    移动速度(0.5-2):<input type="text" id="speed" value="1" class="small_input"></input>
-    击球力度(0.5-3):<input type="text" id="force" value="1" class="small_input"></input>
-    <button type="button" onclick="add_actor()" class="step_button">创建</button>
+    <div id="loginui">
+    账号:<input type="text" id="account" value="" class="large_input"></input>
+    密码:<input type="text" id="password" value="" class="large_input"></input>
+    <button type="button" onclick="login_regist()" class="large_button">注册/登录</button>
+    </div>
+    <div id="account_info"></div>
+    <div id="bind_info"></div>
     </br>
-    <b>角色列表</b></br>
+    <div id="user_area" style="display:none">
+        <b>新建角色（消耗100金币）</b></br>
+        名字:<input type="text" id="name" value="chamo" class="large_input"></input>
+        颜色(66ccff):<input type="text" id="color" value="66ccff" class="small_input"></input></br>
+        <div id="remain_points"></div>
+        质量(0-2):<input type="text" id="mass" value="1" class="small_input" onchange="update_points()"></input>
+        观察力(0-4):<input type="text" id="ray_count" value="2" class="small_input" onchange="update_points()"></input>
+        视野范围(0-4):<input type="text" id="ray_range" value="2" class="small_input" onchange="update_points()"></input>
+        大小(0-6):<input type="text" id="size" value="3" class="small_input" onchange="update_points()"></input>
+        移动速度(0-10):<input type="text" id="speed" value="5" class="small_input" onchange="update_points()"></input>
+        击球力度(0-2):<input type="text" id="force" value="1" class="small_input" onchange="update_points()"></input>
+        <button type="button" onclick="add_actor()" class="step_button">创建</button>
+        </br>
+        <b>个人角色列表</b>
+        <div id="master_actor_list"></div>
+        <b>训练角色</b>
+        <div id="train_status"></div>
+        竞拍出资:<input type="text" id="bid_train" value="0" class="small_input"></input>
+        训练角色:<input type="text" id="train_target" value="" class="small_input"></input>
+        训练对手:<input type="text" id="train_enemy" value="" class="small_input"></input>
+        触球奖励(0.0-1.0):<input type="text" id="kick_reward" value="0.01" class="small_input"></input>
+        进球奖励(0.0-1.0):<input type="text" id="point_reward" value="1" class="small_input"></input>
+        传球奖励(0.0-1.0):<input type="text" id="pass_reward" value="0" class="small_input"></input>
+        断球奖励(0.0-1.0):<input type="text" id="block_reward" value="0" class="small_input"></input>
+        学习率(0.000001-0.1):<input type="text" id="learning_rate" value="0" class="small_input"></input>
+        竞拍时长(以小时为单位):<input type="text" id="bid_hour" value="1" class="small_input"></input>
+        <button type="button" onclick="modify_train()" class="step_button">修改</button>
+        <button type="button" onclick="show_train_info()" class="step_button">刷新</button>
+        <b>天梯比赛</b>
+        <div id="battle_status"></div>
+        竞拍出资:<input type="text" id="bid_battle" value="0" class="small_input"></input>
+        出场角色:<input type="text" id="battle_target" value="" class="small_input"></input>
+        比赛对手:<input type="text" id="battle_enemy" value="" class="small_input"></input>
+        <button type="button" onclick="modify_battle()" class="step_button">修改</button>
+    </div>
+    <b>角色天梯排行</b>
     <div id="actor_list"></div>
-    </br></br>
-    <b>添加比赛计划</b></br>
-    角色1（角色名）: <input type="text" id="actor1" value="" class="large_input"></input>
-    角色2（角色名）: <input type="text" id="actor2" value="" class="large_input"></input>
-    <button type="button" onclick="add_battle()" class="step_button">提交</button>
-    </br>
-    <b>比赛计划</b></br>
-    <div id="battle_list"></div>
-    </br></br>
-    <b>添加训练计划</b></br>
-    训练角色（角色名）: <input type="text" id="train_actor" value="" class="large_input"></input>
-    对手（角色名 | self | all）: <input type="text" id="target_actor" value="" class="large_input"></input>
-    数量(0-1000）: <input type="text" id="train_count" value="10" class="small_input"></input>
-    <button type="button" onclick="add_train()" class="step_button">提交</button>
-    </br>
-    <b>训练计划</b></br>
-    <div id="train_list"></div>
     
 </body>
 </html>

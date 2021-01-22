@@ -54,7 +54,6 @@ public class SoccerFieldArea : MonoBehaviour
     
     public bool battle_done;
     bool is_trainning=true;
-    public int max_battle_count=100;
     void Awake()
     {
         battle_done=false;
@@ -186,10 +185,8 @@ public class SoccerFieldArea : MonoBehaviour
         GameObject fab=player_fab.gameObject;
         if (is_trainning==false){
             player_fab.MaxStep=1000;
-            player_fab.battle_count=25;
         }else{
             player_fab.MaxStep=3000;
-            player_fab.battle_count=max_battle_count;
         }
         
         player_fab.area=this;
@@ -227,15 +224,12 @@ public class SoccerFieldArea : MonoBehaviour
             bp.Model=null;
             bp.BehaviorType=BehaviorType.Default;
         }
-        Vector3 new_posi = parent.position+posi;
+        Vector3 new_posi = posi;
         new_posi.y=actor_info.size/2;
         GameObject obj = Instantiate(fab, parent.position+new_posi, Quaternion.identity);
         Transform trans = obj.transform;
-        // obj.transform.position=new Vector3(trans.position.x, actor_info.size/2f, trans.position.z);
         obj.transform.localScale=new Vector3(actor_info.size, actor_info.size, actor_info.size);
         trans.SetParent(parent);
-        // obj.SetActive(true);
-        // Debug.Log(obj.activeSelf);
         Transform childTrans = trans.Find("AgentCube");
         Material myMaterial = childTrans.gameObject.GetComponent<Renderer>().material;
         myMaterial.color = getColorFromString(actor_info.color);
@@ -267,10 +261,10 @@ public class SoccerFieldArea : MonoBehaviour
         is_trainning=true;
         playerStates.Clear();
         destroy_all();
-        actor_objs[0] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,3f), false);
-        actor_objs[1] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,-3f), false);
-        actor_objs[2] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,3f), false);
-        actor_objs[3] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,-3f), false);
+        actor_objs[0] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0.5f,1.2f), false);
+        actor_objs[1] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0.5f,-1.2f), false);
+        actor_objs[2] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0.5f,1.2f), false);
+        actor_objs[3] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0.5f,-1.2f), false);
     }
 
     public void StartBattles(Actor actor1, Actor actor2){
@@ -280,10 +274,10 @@ public class SoccerFieldArea : MonoBehaviour
         is_trainning=false;
         playerStates.Clear();
         destroy_all();
-        actor_objs[0] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,3f), true);
-        actor_objs[1] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,-3f), true);
-        actor_objs[2] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,3f), true);
-        actor_objs[3] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,-3f), true);
+        actor_objs[0] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,1.2f), true);
+        actor_objs[1] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0f,-1.2f), true);
+        actor_objs[2] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,1.2f), true);
+        actor_objs[3] = generate_actor_object(actor2, AgentSoccer.Team.Two, transform, new Vector3(0f,0f,-1.2f), true);
         for (int i=0; i<actor_objs.Length; i++){
             if (actor_objs[i]==null){
                 destroy_all();
