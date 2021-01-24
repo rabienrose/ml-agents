@@ -35,14 +35,15 @@ public class SoccerFieldArea : MonoBehaviour
     public List<PlayerState> playerStates = new List<PlayerState>();
     [HideInInspector]
     public Vector3 ballStartingPos;
-    public Text score1_text;
-    public Text score2_text;
-    public Text info1_text;
-    public Text info2_text;
+    public Text score_text;
+    public Text rank_text;
     [HideInInspector]
     public bool battle_pause;
     [HideInInspector]
     public int field_id;
+    [HideInInspector] public string ip;
+    string train_name;
+    bool update_done_info=false;
 
     EnvironmentParameters m_ResetParams;
 
@@ -65,12 +66,29 @@ public class SoccerFieldArea : MonoBehaviour
         m_ResetParams = Academy.Instance.EnvironmentParameters;
     }
 
+    public void update_train_info(float win_rate, float reward, float battle_time){
+        if (update_done_info==false){
+            update_done_info=true;
+            StartCoroutine(update_train_info_thread(win_rate, reward, battle_time));
+        }
+    }
+
+    IEnumerator update_train_info_thread(float win_rate, float reward, float battle_time){
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+        formData.Add(new MultipartFormDataSection("train_actor",train_name));
+        formData.Add(new MultipartFormDataSection("win_rate",win_rate.ToString()));
+        formData.Add(new MultipartFormDataSection("reward",reward.ToString()));
+        formData.Add(new MultipartFormDataSection("battle_time",battle_time.ToString()));
+        UnityWebRequest www = UnityWebRequest.Post("http://"+ip+":8001/done_train", formData);
+        yield return www.SendWebRequest();
+    }
+
     IEnumerator ShowBattleResult(string win_actor, string lose_actor)
     {
         List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
         formData.Add(new MultipartFormDataSection("win",win_actor));
         formData.Add(new MultipartFormDataSection("lose",lose_actor));
-        UnityWebRequest www = UnityWebRequest.Post("http://39.105.230.163:8001/update_actor_stats", formData);
+        UnityWebRequest www = UnityWebRequest.Post("http://"+ip+":8001/update_actor_stats", formData);
         yield return www.SendWebRequest();
     }
 
@@ -79,12 +97,11 @@ public class SoccerFieldArea : MonoBehaviour
         if (!is_trainning){
             yield return new WaitForSeconds(2);
         }
-        battle_pause=false;
         foreach (var ps in playerStates)
         {
             ps.agentScript.EndEpisode();  //all agents need to be reset
         }
-        
+        battle_pause=false;
     }
 
     IEnumerator FreezeActors()
@@ -101,22 +118,46 @@ public class SoccerFieldArea : MonoBehaviour
     }
 
     void update_score_board(){
-        if (score1_text!=null &&score2_text!=null){
-            string data_info = String.Format("<color=#{0}>{1}    {2}</color>", actor_info1.color, actor_info1.name, team1_score); 
-            score1_text.text = data_info;
-            data_info = String.Format("<color=#{0}>{2}    {1}</color>", actor_info2.color, actor_info2.name, team2_score); 
-            score2_text.text = data_info;
+        if (score_text!=null){
+            string data_info = String.Format("<color=#{0}>{1} ({3})    {2}</color>", actor_info1.color, actor_info1.name, team1_score,actor_info1.elo); 
+            data_info = data_info+"    vs    ";
+            data_info = data_info+String.Format("<color=#{0}>{2}    ({3}) {1}</color>", actor_info2.color, actor_info2.name, team2_score,actor_info2.elo); 
+            score_text.text = data_info;
         }
     }
 
-    string get_actor_info_string(Actor actor_info){
-        string actor_inf_str = String.Format("<color=#{0}>{1}</color>  质量:{2}  观察力:{3}  视野:{4}  体积:{5}  速度:{6}  力量:{7}  胜利:{8}  失败:{9}", actor_info.color, actor_info.name, actor_info.mass, actor_info.ray_count, actor_info.ray_range, actor_info.size, actor_info.speed,actor_info.force,actor_info.win_count, actor_info.lose_count); 
-        return actor_inf_str;
+    IEnumerator update_rank(){
+        List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
+        UnityWebRequest www = UnityWebRequest.Post("http://"+ip+":8001/get_actor_list_str", formData);
+        yield return www.SendWebRequest();
+        if (www.isNetworkError || www.isHttpError){
+            Debug.Log("NetworkError");
+            yield break;
+        }
+        string full_re=www.downloadHandler.text;
+        if (full_re==""){
+            yield break;
+        }
+        
+        string[] items = full_re.Split(',');
+        string actor_info_str_all="";
+        for (int i=0; i<items.Length; i++){
+            if (items[i]==""){
+                break;
+            }
+            string[] info_items = items[i].Split(' ');
+            string name=info_items[0];
+            string color=info_items[1];
+            string elo=info_items[2];
+            string actor_inf_str = String.Format("<color=#{0}>{3} {1} {2}</color>", color, name, elo, i+1); 
+            actor_info_str_all=actor_info_str_all+actor_inf_str+"\n";
+        }
+        rank_text.text=actor_info_str_all;
     }
 
-    void ShowActorInfo(){
-        info1_text.text = get_actor_info_string(actor_info1);
-        info2_text.text = get_actor_info_string(actor_info2);
+    string get_actor_info_string(Actor actor_info){
+        string actor_inf_str = String.Format("<color=#{0}>{1}</color>  天梯分数:{2} ", actor_info.color, actor_info.name, actor_info.elo); 
+        return actor_inf_str;
     }
 
     public void GoalTouched(AgentSoccer.Team scoredTeam)
@@ -126,6 +167,7 @@ public class SoccerFieldArea : MonoBehaviour
         }
         battle_pause=true;
         if (is_trainning==false){
+            
             if (scoredTeam==AgentSoccer.Team.One){
                 team1_score=team1_score+1;
             }else{
@@ -143,16 +185,19 @@ public class SoccerFieldArea : MonoBehaviour
             }
             update_score_board();
             StartCoroutine(FreezeActors());
-        }
-        foreach (var ps in playerStates)
-        {
-            if (ps.agentScript.team == scoredTeam)
+        }else{
+            foreach (var ps in playerStates)
             {
-                ps.agentScript.AddReward(1 + ps.agentScript.timePenalty);
-            }
-            else
-            {
-                ps.agentScript.AddReward(-1);
+                if (ps.agentScript.team == scoredTeam)
+                {
+                    ps.agentScript.AddReward(1 + ps.agentScript.timePenalty);
+                    ps.agentScript.win_count=ps.agentScript.win_count+1;
+                    ps.agentScript.total_rewards=ps.agentScript.total_rewards+ps.agentScript.m_Reward;
+                }
+                else
+                {
+                    ps.agentScript.AddReward(-1);
+                }
             }
         }
         StartCoroutine(DoneMatch());
@@ -257,8 +302,10 @@ public class SoccerFieldArea : MonoBehaviour
         }
     }
 
-    public void StartTrains(Actor actor1, Actor actor2){
+    public void StartTrains(Actor actor1, Actor actor2, string train_actor_name){
         is_trainning=true;
+        update_done_info=false;
+        train_name=train_actor_name;
         playerStates.Clear();
         destroy_all();
         actor_objs[0] = generate_actor_object(actor1, AgentSoccer.Team.One, transform, new Vector3(0f,0.5f,1.2f), false);
@@ -268,6 +315,7 @@ public class SoccerFieldArea : MonoBehaviour
     }
 
     public void StartBattles(Actor actor1, Actor actor2){
+        StartCoroutine(update_rank());
         battle_done=false;
         team1_score=0;
         team2_score=0;
@@ -292,7 +340,6 @@ public class SoccerFieldArea : MonoBehaviour
         Transform goal2Trans = transform.Find("Field").Find("Goal2");
         Material myMaterial2 = goal2Trans.gameObject.GetComponent<Renderer>().material;
         myMaterial2.color = getColorFromString(actor2.color);
-        ShowActorInfo();
         update_score_board();
     }
 }

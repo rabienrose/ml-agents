@@ -49,10 +49,17 @@ public class AgentSoccer : Agent
     BehaviorParameters m_BehaviorParameters;
     Vector3 m_Transform;
 
+    public int win_count=0;
+    public int total_match_count=0;
+    public float total_rewards=0f;
+
     EnvironmentParameters m_ResetParams;
 
     public override void Initialize()
     {
+        win_count=0;
+        total_match_count=0;
+        total_rewards=0f;
         m_Existential = 1f / MaxStep;
         m_BehaviorParameters = gameObject.GetComponent<BehaviorParameters>();
         if (team == Team.One)
@@ -219,8 +226,15 @@ public class AgentSoccer : Agent
 
     public override void OnEpisodeBegin()
     {
+        total_match_count=total_match_count+1;
         if(cul_steps>25000 || area.battle_done){
             gameObject.SetActive(false);
+            if (m_BehaviorParameters.Model==null){
+                float win_rate=(float)win_count/(float)total_match_count;
+                float reward=(float)total_rewards/(float)total_match_count;
+                float battle_time=25000f/(float)total_match_count*0.02f;
+                area.update_train_info(win_rate, reward, battle_time);
+            }
         }
         timePenalty = 0;
         m_BallTouch = m_ResetParams.GetWithDefault("ball_touch", 0);

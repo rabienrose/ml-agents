@@ -21,15 +21,14 @@ train_table = mydb["train"]
 account_table = mydb["account"]
 #actor_table.insert_one({"name":"chamo","colro":"66ccff","id":0,"mass":50,"ray_count":180, "ray_range":10, "speed":0.2, "force":1, "size":1, "train_steps":0, "win_count":0, "lose_count":0})
 #train_table.insert_one({"train_actor":"chamo", "target_team":"self","train_count":10})
-train_table.delete_many({"train_actor":"chamo"})
+# train_table.delete_many({"train_actor":"社会人"})
 # train_table.insert_one({"train_actor":"chamo", "target_actor":"chamo"})
 # for x in train_table.find({}):
 #     print(x)
 # actor_table.delete_many({})
-# account_table.update_one({"name":"chamo"},{"$set":{"money":50}})
-# actor_table.update_many({},{"$set":{"elo":1300}})
-for x in train_table.find({}):
-    
+actor_table.update_many({},{"$set":{"elo":1200}})
+# account_table.update_one({"name":"chamo"},{"$set":{"training_num":0}})
+for x in actor_table.find({}):
     print(x)
 #train_table.delete_many({"train_actor":"chamo"})
 # task_table.update_many({"task":"locmap"},{"$set":{"task":"group","status":2}})

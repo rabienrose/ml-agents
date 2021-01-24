@@ -26,23 +26,41 @@ account_table = mydb["account"]
 
 @app.route('/get_actor_list', methods=['GET', 'POST'])
 def get_actor_list():
-    actor_list = list(actor_table.find({},{"_id":0}))
     common_actor_infos=[]
-    for item in actor_list:
+    for item in actor_table.find({},{"_id":0}):
+        if not "elo" in item:
+            continue
         info={}
         info["name"]=item["name"]
         info["color"]=item["color"]
-        info["mass"]=item["mass"]
-        info["ray_count"]=item["ray_count"]
-        info["ray_range"]=item["ray_range"]
-        info["speed"]=item["speed"]
-        info["force"]=item["force"]
         info["elo"]=item["elo"]
         common_actor_infos.append(info)
     return json.dumps(common_actor_infos)
 
+def myFunc(e):
+  return e[0]
+
+@app.route('/get_actor_list_str', methods=['GET', 'POST'])
+def get_actor_list_str():
+    info=""
+    actor_elo_list=[]
+    for item in actor_table.find({},{"_id":0}):
+        if not "elo" in item:
+            continue
+        if item["elo"]<=0:
+            continue
+        actor_elo_list.append([item["elo"], item["name"], item["color"]])
+    actor_elo_list.sort(key=myFunc,reverse=True)
+    for item in actor_elo_list:
+        info=info+item[1]+" "
+        info=info+item[2]+" "
+        info=info+str(int(item[0]))+" "
+        info=info+","
+    return info
+
 def get_elo(a_elo,b_elo, result):
     a_R = 1/(1+math.pow(10, (b_elo-a_elo)/400))
+    print(a_R)
     if result==1:#a win
         new_a_elo=a_elo+100*(1-a_R)
     elif result==0:
@@ -59,18 +77,20 @@ def update_actor_stats():
     win_actor=request.form['win']
     lose_actor=request.form['lose']
     win_count=-1
-    win_elo=0
+    win_elo=1200
     for x in actor_table.find({"name":win_actor},{"win_count":1,"elo":1,"_id":0}):
         win_count=x["win_count"]
-        win_elo=x["elo"]
+        if "elo" in x:
+            win_elo=x["elo"]
     lose_count=-1
-    lose_elo=0
+    lose_elo=1200
     for x in actor_table.find({"name":lose_actor},{"lose_count":1,"_id":0}):
         lose_count=x["lose_count"]
-        lose_elo=x["elo"]
+        if "elo" in x:
+            lose_elo=x["elo"]
     if win_count>=0 and lose_count>=0:
-        new_win_elo=get_elo(win_elo,lose_elo, 1)
-        new_lose_elo=get_elo(lose_elo,win_elo, -1)
+        new_win_elo=int(get_elo(win_elo,lose_elo, 1))
+        new_lose_elo=int(get_elo(lose_elo,win_elo, -1))
         actor_table.update_one({"name":win_actor},{"$set":{"win_count":win_count+1,"elo":new_win_elo}})
         actor_table.update_one({"name":lose_actor},{"$set":{"lose_count":lose_count+1,"elo":new_lose_elo}})
     return "ok"
@@ -81,8 +101,6 @@ def update_actor_stats():
 def get_master_actors():
     master_actor_infos=[]
     for x in actor_table.find({"master":auth.username()}):
-        if not "elo" in x:
-            continue
         info={}
         info["name"]=x["name"]
         info["color"]=x["color"]
@@ -90,8 +108,12 @@ def get_master_actors():
         info["ray_count"]=x["ray_count"]
         info["ray_range"]=x["ray_range"]
         info["speed"]=x["speed"]
+        info["size"]=x["size"]
         info["force"]=x["force"]
-        info["elo"]=x["elo"]
+        if "elo" in x:
+            info["elo"]=x["elo"]
+        else:
+            info["elo"]=0
         master_actor_infos.append(info)
     return json.dumps(master_actor_infos)
 
@@ -131,8 +153,7 @@ def add_actor():
     speed=speed_p/10.0*(2-0.5)+0.5
     force=force_p/2.0*(3-0.5)+0.5
     size=size_p/6.0*(2-0.5)+0.5
-    actor_info={"name":name,"color":color,"mass":mass,"ray_count":ray_count, "ray_range":ray_range, "speed":speed, "force":force, "size":size, "train_steps":0, "win_count":0, "lose_count":0,"master":auth.username()}
-    print(actor_info)
+    actor_info={"name":name,"color":color,"mass":mass,"ray_count":ray_count, "ray_range":ray_range, "speed":speed, "force":force, "size":size, "train_steps":0, "win_count":0, "lose_count":0,"master":auth.username(),"elo":0}
     actor_table.insert_one(actor_info)
     account_table.update_one({"name":auth.username()},{"$set":{"money":money}})
     return json.dumps(["ok"])
@@ -151,8 +172,7 @@ def get_actor_info_string(x):
     re_str=re_str+str(x["force"])+" "
     re_str=re_str+str(x["size"])+" "
     re_str=re_str+str(x["mass"])+" "
-    re_str=re_str+str(x["win_count"])+" "
-    re_str=re_str+str(x["lose_count"])
+    re_str=re_str+str(x["elo"])
     return re_str
 
 def get_model_name(actor_name, b_rand):
@@ -212,21 +232,29 @@ def get_train_info_str(train_info):
 def get_train_info():
     user = auth.username()
     return_info={}
-    all_bid = list(account_table.find({"bid_train":{"$gt":0}},{"bid_train":1,"_id":0,"money":1}))
-    max_bid=-1
-    for bid in all_bid:
-        if bid["money"]<bid["bid_train"]:
-            continue
-        if max_bid==1 or max_bid<bid["bid_train"]:
-            max_bid=bid["bid_train"]
-    if max_bid<0:
-        max_bid==0
-    for x in account_table.find({"name":user},{"_id":0,"bid_train":1,"bid_hour":1,"train_target":1,"train_enemy":1,"kick_reward":1,"point_reward":1,"pass_reward":1,"block_reward":1,"learning_rate":1}):
+    max_bid_info = get_max_bid_train()
+    max_bid=0
+    if len(max_bid_info)>0:
+        max_bid=max_bid_info["max_bid"]
+    for x in account_table.find({"name":user},{"_id":0,"battle_time":1,"win_rate":1,"reward":1,"bid_train":1,"bid_hour":1,"train_target":1,"train_enemy":1,"kick_reward":1,"point_reward":1,"pass_reward":1,"block_reward":1,"learning_rate":1,"training_num":1,"last_train_time":1}):
         if "bid_train" in x:
-            return_info["train_status"]=x["train_status"]
-            return_info["reward"]=x["reward"]
-            return_info["win_rate"]=x["win_rate"]
-            return_info["battle_time"]=x["battle_time"]
+            if "training_num" in x:
+                return_info["training_num"]=x["training_num"]
+                if "last_train_time" in x:
+                    print(time.time()-x["last_train_time"])
+                    if time.time()-x["last_train_time"]>600:
+                        return_info["training_num"]=0
+                        account_table.update_one({"name":user},{"$set":{"training_num":0}})
+            else:
+                return_info["training_num"]=0
+            if "reward" in x:
+                return_info["reward"]=x["reward"]
+                return_info["win_rate"]=x["win_rate"]
+                return_info["battle_time"]=x["battle_time"]
+            else:
+                return_info["reward"]=0
+                return_info["win_rate"]=0
+                return_info["battle_time"]=0
             return_info["bid_train"]=x["bid_train"]
             return_info["bid_hour"]=x["bid_hour"]
             return_info["train_target"]=x["train_target"]
@@ -239,20 +267,40 @@ def get_train_info():
             return_info["max_bid"]=max_bid
     return json.dumps(return_info)
 
-@app.route('/pop_train_quene', methods=['POST'])
-def pop_train_quene():
-    train_list = list(train_table.find({}))
-    re_string=""
-    if len(train_list)>0:
-        first_train=train_list[0]
-        re_string = get_train_info_str(first_train)
-        train_table.delete_one({"_id":first_train["_id"]})
+@app.route('/done_train', methods=['POST'])
+def done_train():
+    train_actor=request.form['train_actor']
+    reward=request.form['reward']
+    win_rate=request.form['win_rate']
+    battle_time=request.form['battle_time']
+    master=""
+    for x in actor_table.find({"name":train_actor},{"_id":0,"master":1}):
+        master=x["master"]
+    if master=="":
+        return ""
+    training_num=-1
+    for x in account_table.find({"name":master},{"_id":0,"training_num":1}):
+        training_num=x["training_num"]
+    account_table.update_one({"name":master},{"$set":{"win_rate":win_rate,"reward":reward,"battle_time":battle_time,"training_num":training_num-1}})
+    return ""
+
+@app.route('/pop_train', methods=['POST'])
+def pop_train():
+    max_bid_info = get_max_bid_train()
+    print(max_bid_info)
+    if len(max_bid_info)>0:
+        train_time=time.time()
+        print(train_time)
+        account_table.update_one({"name":max_bid_info["user"]},{"$set":{"money":max_bid_info["money"]-max_bid_info["max_bid"],"bid_hour":max_bid_info["bid_hour"]-1,"training_num":max_bid_info["training_num"]+1,"last_train_time":train_time}})
+        train_info={"train_actor":max_bid_info["train_target"], "target_actor":max_bid_info["train_enemy"]}
+        re_string = get_train_info_str(train_info)
     else:
         actor_list = list(actor_table.find({},{"_id":0,"name":1}))
         rand_ind1 = randint(0, len(actor_list)-1)
         rand_ind2 = randint(0, len(actor_list)-1)
         first_train={"train_actor":actor_list[rand_ind1]["name"], "target_actor":actor_list[rand_ind2]["name"]}
         re_string = get_train_info_str(first_train)
+        
     return re_string
 
 def get_battle_info_str(battle_info):
@@ -275,22 +323,6 @@ def get_battle_info_str(battle_info):
     re_string=re_string+get_model_name(battle_info["actor2"], False)
     return re_string
 
-@app.route('/pop_battle_quene', methods=['POST'])
-def pop_battle_quene():
-    battle_list = list(battle_table.find({}))
-    re_string=""
-    if len(battle_list)>0:
-        first_battle=battle_list[0]
-        re_string = get_battle_info_str(first_battle)
-        battle_table.delete_one({"_id":first_battle["_id"]})
-    else:
-        actor_list = list(actor_table.find({},{"_id":0,"name":1}))
-        rand_ind1 = randint(0, len(actor_list)-1)
-        rand_ind2 = randint(0, len(actor_list)-1)
-        first_battle={"actor1":actor_list[rand_ind1]["name"], "actor2":actor_list[rand_ind2]["name"]}
-        re_string = get_battle_info_str(first_battle)
-    return re_string
-
 @app.route('/modify_train', methods=['POST'])
 @auth.login_required
 def modify_train():
@@ -304,6 +336,7 @@ def modify_train():
     point_reward=float(obj['point_reward'])
     pass_reward=float(obj['pass_reward'])
     block_reward=float(obj['block_reward'])
+    learning_rate=float(obj['learning_rate'])
     bid_hour=int(obj['bid_hour'])
     find_actor=False
     for x in actor_table.find({"name":train_target},{"master":1,"_id":0}):
@@ -321,28 +354,124 @@ def modify_train():
     re_string= get_model_name(train_enemy, False)
     if re_string=="":
         return json.dumps(["train_enemy_no_model"])
-    account_table.update_one({"name":user},{"$set":{"bid_train":bid_train,"train_target":train_target,"train_enemy":train_enemy,"kick_reward":kick_reward,"point_reward":point_reward,"pass_reward":pass_reward,"block_reward":block_reward,"bid_hour":bid_hour}})
+    account_table.update_one({"name":user},{"$set":{"bid_train":bid_train,"train_target":train_target,"train_enemy":train_enemy,"kick_reward":kick_reward,"point_reward":point_reward,"pass_reward":pass_reward,"block_reward":block_reward,"bid_hour":bid_hour,"learning_rate":learning_rate}})
     return json.dumps(["ok"])
 
-@app.route('/add_battle_quene', methods=['POST'])
-def add_battle_quene():
-    battle_data = request.form['battle_data']
-    battle_obj = json.loads(battle_data)
-    actor1=battle_obj['actor1']
-    actor2=battle_obj['actor2']
-    if actor_table.find({"name":actor1}).count(True)==0:
-        return json.dumps(["actor1_not_exist"])
-    if actor_table.find({"name":actor2}).count(True)==0:
-        return json.dumps(["actor2_not_exist"])
-    re_string= get_model_name(actor1, False)
+@app.route('/modify_battle', methods=['POST'])
+@auth.login_required
+def modify_battle():
+    user = auth.username()
+    data = request.form['data']
+    obj = json.loads(data)
+    bid_battle=int(obj['bid_battle'])
+    battle_target=obj['battle_target']
+    battle_enemy=obj['battle_enemy']
+    if battle_enemy==battle_target:
+        json.dumps(["can_not_battle_with_self"])
+    find_one=False
+    for x in actor_table.find({"name":battle_target},{"master":1,"_id":0}):
+        find_one=True
+        if x["master"]!=user:
+            return json.dumps(["battle_target_not_yours"])
+    if find_one==False:
+        return json.dumps(["battle_target_not_exist"])
+    if actor_table.find({"name":battle_enemy}).count(True)==0:
+        return json.dumps(["battle_enemy_not_exist"])
+    re_string= get_model_name(battle_target, False)
     if re_string=="":
-        return json.dumps(["actor1_no_model"])
-    re_string= get_model_name(actor2, False)
+        return json.dumps(["battle_target_no_model"])
+    re_string= get_model_name(battle_enemy, False)
     if re_string=="":
-        return json.dumps(["actor2_no_model"])
-    battle_table.insert_one({"actor1":actor1, "actor2":actor2})
-    battle_table.insert_one({"actor1":actor2, "actor2":actor1})
+        return json.dumps(["battle_enemy_no_model"])
+    account_table.update_one({"name":user},{"$set":{"battle_target":battle_target,"battle_enemy":battle_enemy,"bid_battle":bid_battle}})
     return json.dumps(["ok"])
+
+def get_max_bid_train():
+    all_bid = list(account_table.find({"bid_train":{"$gt":0},"bid_hour":{"$gt":0}},{"bid_train":1,"_id":0,"money":1,"name":1}))
+    max_bid=0
+    max_bid_account=None
+    for bid in all_bid:
+        if bid["money"]<bid["bid_train"]:
+            continue
+        if max_bid==1 or max_bid<bid["bid_train"]:
+            max_bid=bid["bid_train"]
+            max_bid_account=bid["name"]
+    max_bid_info={}
+    if max_bid_account is not None:
+        for x in account_table.find({"name":max_bid_account},{"_id":0,"train_target":1, "train_enemy":1,"money":1,"bid_hour":1,"training_num":1}):
+            max_bid_info["max_bid"]=max_bid
+            max_bid_info["train_target"]=x["train_target"]
+            max_bid_info["train_enemy"]=x["train_enemy"]
+            max_bid_info["bid_hour"]=x["bid_hour"]
+            max_bid_info["user"]=max_bid_account
+            max_bid_info["money"]=x["money"]
+            if "training_num" in x:
+                max_bid_info["training_num"]=x["training_num"]
+            else:
+                max_bid_info["training_num"]=0
+            break
+    return max_bid_info
+
+def get_max_bid_battle():
+    all_bid = list(account_table.find({"bid_battle":{"$gt":0}},{"bid_battle":1,"_id":0,"money":1,"name":1}))
+    max_bid=0
+    max_bid_account=None
+    for bid in all_bid:
+        if bid["money"]<bid["bid_battle"]:
+            continue
+        if max_bid==1 or max_bid<bid["bid_battle"]:
+            max_bid=bid["bid_battle"]
+            max_bid_account=bid["name"]
+    max_bid_info={}
+    if max_bid_account is not None:
+        for x in account_table.find({"name":max_bid_account},{"_id":0,"battle_target":1, "battle_enemy":1,"money":1}):
+            max_bid_info["max_bid"]=max_bid
+            max_bid_info["battle_target"]=x["battle_target"]
+            max_bid_info["battle_enemy"]=x["battle_enemy"]
+            max_bid_info["user"]=max_bid_account
+            max_bid_info["money"]=x["money"]
+            break
+    return max_bid_info
+
+@app.route('/pop_battle', methods=['POST'])
+def pop_battle():
+    max_bid_info = get_max_bid_battle()
+    if len(max_bid_info)>0:
+        account_table.update_one({"name":max_bid_info["user"]},{"$set":{"money":max_bid_info["money"]-max_bid_info["max_bid"]}})
+        rand_ind = randint(0, 1)
+        if rand_ind==0:
+            battle_info={"actor1":max_bid_info["battle_target"], "actor2":max_bid_info["battle_enemy"]}
+        else:
+            battle_info={"actor1":max_bid_info["battle_enemy"], "actor2":max_bid_info["battle_target"]}
+        re_string = get_battle_info_str(battle_info)
+    else:
+        actor_list = list(actor_table.find({},{"_id":0,"name":1}))
+        if len(actor_list)>1:
+            while True:
+                rand_ind1 = randint(0, len(actor_list)-1)
+                rand_ind2 = randint(0, len(actor_list)-1)
+                if rand_ind1==rand_ind2:
+                    continue
+                battle_info={"actor1":actor_list[rand_ind1]["name"], "actor2":actor_list[rand_ind2]["name"]}
+                re_string = get_battle_info_str(battle_info)
+                break
+    return re_string
+
+@app.route('/get_battle_info', methods=['POST'])
+@auth.login_required
+def get_battle_info():
+    user = auth.username()
+    return_info={}
+    max_bid_info = get_max_bid_battle()
+    max_bid=0
+    if len(max_bid_info)>0:
+        max_bid=max_bid_info["max_bid"]
+    for x in account_table.find({"name":user},{"_id":0,"battle_target":1,"battle_enemy":1,"bid_battle":1}):
+        return_info["max_bid"]=max_bid
+        return_info["battle_target"]=x["battle_target"]
+        return_info["battle_enemy"]=x["battle_enemy"]
+        return_info["bid_battle"]=x["bid_battle"]
+    return json.dumps(return_info)
 
 @auth.get_password
 def get_password(username):
@@ -414,5 +543,5 @@ def get_access_list():
 if __name__ == '__main__':
     app.config['SECRET_KEY'] = 'xxx'
     app.config['UPLOAD_FOLDER']='./raw'
-    app.debug = False
+    app.debug = True
     app.run('0.0.0.0', port=8001)

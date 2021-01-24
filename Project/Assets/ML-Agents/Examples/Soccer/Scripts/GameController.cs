@@ -20,8 +20,7 @@ public class Actor{
     public float force=0;
     public float size=0;
     public float mass=0;
-    public int win_count=0;
-    public int lose_count=0;
+    public int elo=0;
     public NNModel model=null;
     public string dump(){
         string re_str ="name ";
@@ -39,11 +38,20 @@ public class Actor{
 public class GameController : MonoBehaviour{
     public AgentSoccer actor_agent;
     public SoccerFieldArea[] fields;
-    //string oss_model_folder="https://monster-war.oss-cn-beijing-internal.aliyuncs.com/model";
-    string oss_model_folder="https://monster-war.oss-cn-beijing.aliyuncs.com/model";
-    int field_to_use=5;
+    bool use_internal=true;
     bool train_mode=false;
-    int train_count=0;
+
+    string oss_model_folder="";
+    string ip=""
+    if (use_internal){
+        oss_model_folder="https://monster-war.oss-cn-beijing-internal.aliyuncs.com/model";
+        ip="172.17.153.41"
+    }else{
+        oss_model_folder="https://monster-war.oss-cn-beijing.aliyuncs.com/model";
+        ip="10.192.154.76"
+    }
+    int field_to_use=5;
+    
 
     protected void Start(){
         if (field_to_use>fields.Length){
@@ -69,8 +77,7 @@ public class GameController : MonoBehaviour{
         actor.force=float.Parse(items[5]);
         actor.size=float.Parse(items[6]);
         actor.mass=float.Parse(items[7]);
-        actor.win_count=Int32.Parse(items[8]);
-        actor.lose_count=Int32.Parse(items[9]);
+        actor.elo=Int32.Parse(items[8]);
         return actor;
     }
 
@@ -125,6 +132,7 @@ public class GameController : MonoBehaviour{
         for(int i=0; i<field_to_use; i++){
             fields[i].gameObject.SetActive(true);
             fields[i].field_id=i;
+            fields[i].ip=ip;
         }
         while (true){
             SoccerFieldArea idle_field = get_idle_field();
@@ -136,20 +144,20 @@ public class GameController : MonoBehaviour{
             List<IMultipartFormSection> formData = new List<IMultipartFormSection>();
             UnityWebRequest www;
             if (train_mode){
-                www = UnityWebRequest.Post("http://39.105.230.163:8001/pop_train_quene", formData);
+                www = UnityWebRequest.Post("http://"+ip+":8001/pop_train", formData);
             }else{
-                www = UnityWebRequest.Post("http://39.105.230.163:8001/pop_battle_quene", formData);
+                www = UnityWebRequest.Post("http://"+ip+":8001/pop_battle", formData);
             }
             
             yield return www.SendWebRequest();
             if (www.isNetworkError || www.isHttpError){
                 Debug.Log("NetworkError");
-                yield return new WaitForSeconds(100);
+                yield return new WaitForSeconds(10);
                 continue;
             }
             string full_re=www.downloadHandler.text;
             if (full_re==""){
-                yield return new WaitForSeconds(100);
+                yield return new WaitForSeconds(10);
                 continue;
             }
             string[] items = full_re.Split(',');
@@ -168,11 +176,10 @@ public class GameController : MonoBehaviour{
                 idle_field.StartBattles(actor1, actor2);
             }else{
                 int dice = rnd.Next(0, 2);
-                train_count=train_count+1;
                 if (dice==0){
-                    idle_field.StartTrains(actor1, actor2);
+                    idle_field.StartTrains(actor1, actor2, actor1.name);
                 }else{
-                    idle_field.StartTrains(actor2, actor1);
+                    idle_field.StartTrains(actor2, actor1, actor1.name);
                 }
             }
             yield return new WaitForSeconds(1);

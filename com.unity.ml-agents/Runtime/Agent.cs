@@ -242,7 +242,7 @@ namespace Unity.MLAgents
         /// action that we wish to reinforce/reward, and set to a negative value
         /// when the agent performs a "bad" action that we wish to punish/deter.
         /// Additionally, the magnitude of the reward should not exceed 1.0
-        float m_Reward;
+        [HideInInspector] public float m_Reward;
 
         /// Keeps track of the cumulative reward in this episode.
         float m_CumulativeReward;

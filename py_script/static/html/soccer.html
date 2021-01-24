@@ -31,26 +31,36 @@
         </br>
         <b>个人角色列表</b>
         <div id="master_actor_list"></div>
+        </br>
         <b>训练角色</b>
         <div id="train_status"></div>
         竞拍出资:<input type="text" id="bid_train" value="0" class="small_input"></input>
-        训练角色:<input type="text" id="train_target" value="" class="small_input"></input>
-        训练对手:<input type="text" id="train_enemy" value="" class="small_input"></input>
-        触球奖励(0.0-1.0):<input type="text" id="kick_reward" value="0.01" class="small_input"></input>
+        训练角色:<input type="text" id="train_target" value="" class="large_input"></input>
+        训练对手:<input type="text" id="train_enemy" value="" class="large_input"></input>
+        竞拍时长(10分钟为一个单位):<input type="text" id="bid_hour" value="1" class="small_input"></input>
+        </br>
+        触球奖励(0.0-1.0):<input type="text" id="kick_reward" value="0" class="small_input"></input>
         进球奖励(0.0-1.0):<input type="text" id="point_reward" value="1" class="small_input"></input>
         传球奖励(0.0-1.0):<input type="text" id="pass_reward" value="0" class="small_input"></input>
         断球奖励(0.0-1.0):<input type="text" id="block_reward" value="0" class="small_input"></input>
-        学习率(0.000001-0.1):<input type="text" id="learning_rate" value="0" class="small_input"></input>
-        竞拍时长(以小时为单位):<input type="text" id="bid_hour" value="1" class="small_input"></input>
+        学习率(0.000001-0.1):<input type="text" id="learning_rate" value="0.0003" class="small_input"></input>
+        </br>
         <button type="button" onclick="modify_train()" class="step_button">修改</button>
         <button type="button" onclick="show_train_info()" class="step_button">刷新</button>
+        <button type="button" onclick="set_curr_train()" class="large_button">设置为当前</button>
+        </br>
+        </br>
         <b>天梯比赛</b>
         <div id="battle_status"></div>
         竞拍出资:<input type="text" id="bid_battle" value="0" class="small_input"></input>
-        出场角色:<input type="text" id="battle_target" value="" class="small_input"></input>
-        比赛对手:<input type="text" id="battle_enemy" value="" class="small_input"></input>
+        出战角色:<input type="text" id="battle_target" value="" class="large_input"></input>
+        比赛对手:<input type="text" id="battle_enemy" value="" class="large_input"></input>
+        </br>
         <button type="button" onclick="modify_battle()" class="step_button">修改</button>
+        <button type="button" onclick="show_battle_status()" class="step_button">刷新</button>
+        <button type="button" onclick="set_curr_battle()" class="large_button">设置为当前</button>
     </div>
+    </br>
     <b>角色天梯排行</b>
     <div id="actor_list"></div>
     

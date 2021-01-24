@@ -250,7 +250,7 @@ MonoBehaviour:
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
   m_BehaviorType: 2
-  m_BehaviorName: "\u8336\u672B"
+  m_BehaviorName: "\u793E\u4F1A\u4EBA"
   TeamId: 0
   m_UseChildSensors: 1
   m_UseChildActuators: 1
@@ -272,14 +272,18 @@ MonoBehaviour:
   hasUpgradedFromAgentParameters: 1
   MaxStep: 1000
   cul_steps: 0
+  m_Reward: 0
   team: 1
   area: {fileID: 0}
   m_BallTouch: 0
   position: 2
-  power: 1
-  speed: 2
+  power: 3
+  speed: 1
   timePenalty: 0
   agentRb: {fileID: 0}
+  win_count: 0
+  total_match_count: 0
+  total_rewards: 0
 --- !u!114 &8238939283672671244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -303,7 +307,7 @@ MonoBehaviour:
   m_RaysPerDirection: 18
   m_MaxRayDegrees: 180
   m_SphereCastRadius: 0.5
-  m_RayLength: 25
+  m_RayLength: 30
   m_RayLayerMask:
     serializedVersion: 2
     m_Bits: 4294967291
